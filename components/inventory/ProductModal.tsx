@@ -1,118 +1,300 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { InventoryItem } from '@/lib/types';
+import { Plus, Trash2, Box, Layers } from 'lucide-react';
+import clsx from 'clsx';
+
+interface ProductGroup {
+    name: string;
+    variants: InventoryItem[];
+}
 
 interface ProductModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (item: Omit<InventoryItem, 'id' | 'last_updated'>) => void;
-    initialData?: InventoryItem;
+    onSubmit: (item: { item: string; variants: { type: string; quantity: number }[] }) => void;
+    initialData?: InventoryItem; // Kept for potential compatibility, though this new flow is optimized for Add
+    groups?: ProductGroup[];
 }
 
-export function ProductModal({ isOpen, onClose, onSubmit, initialData }: ProductModalProps) {
-    const [name, setName] = useState('');
-    const [sku, setSku] = useState('');
-    const [category, setCategory] = useState('');
-    const [quantity, setQuantity] = useState('');
-    const [price, setPrice] = useState('');
-    const [minStock, setMinStock] = useState('');
-    const [location, setLocation] = useState('');
-    const [supplier, setSupplier] = useState('');
+type ItemMode = 'new' | 'existing';
+type TypeMode = 'new' | 'existing';
 
+interface VariantRow {
+    id: string;
+    typeMode: TypeMode;
+    selectedType: string;
+    newType: string;
+    quantity: string;
+}
+
+export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: ProductModalProps) {
+    const [itemMode, setItemMode] = useState<ItemMode>('new');
+    const [selectedGroup, setSelectedGroup] = useState('');
+    const [newItemName, setNewItemName] = useState('');
+
+    // Rows for variants
+    const [variantRows, setVariantRows] = useState<VariantRow[]>([
+        { id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '' }
+    ]);
+
+    // Reset state when modal opens
     useEffect(() => {
-        if (initialData) {
-            setName(initialData.name);
-            setSku(initialData.sku);
-            setCategory(initialData.category);
-            setQuantity(initialData.quantity.toString());
-            setPrice(initialData.unit_price.toString());
-            setMinStock(initialData.min_stock_level.toString());
-            setLocation(initialData.location || '');
-            setSupplier(initialData.supplier || '');
-        } else {
-            setName(''); setSku(''); setCategory(''); setQuantity(''); setPrice(''); setMinStock(''); setLocation(''); setSupplier('');
+        if (isOpen) {
+            setItemMode('new');
+            setSelectedGroup('');
+            setNewItemName('');
+            setVariantRows([{ id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '' }]);
         }
-    }, [initialData, isOpen]);
+    }, [isOpen]);
+
+    // Handle Item Mode Change
+    const handleItemModeChange = (mode: ItemMode) => {
+        setItemMode(mode);
+        // If switching to new, reset selected group
+        // If switching to existing, ensure rows are compatible (e.g. might default to existing type mode)
+        setVariantRows(prev => prev.map(row => ({
+            ...row,
+            typeMode: mode === 'new' ? 'new' : 'existing' // Force new type if item is new
+        })));
+    };
+
+    // Add a new variant row
+    const addVariantRow = () => {
+        setVariantRows(prev => [
+            ...prev,
+            {
+                id: Math.random().toString(36).substr(2, 9),
+                typeMode: itemMode === 'new' ? 'new' : 'existing',
+                selectedType: '',
+                newType: '',
+                quantity: ''
+            }
+        ]);
+    };
+
+    // Remove a variant row
+    const removeVariantRow = (id: string) => {
+        if (variantRows.length > 1) {
+            setVariantRows(prev => prev.filter(row => row.id !== id));
+        }
+    };
+
+    // Update row data
+    const updateRow = (id: string, field: keyof VariantRow, value: string) => {
+        setVariantRows(prev => prev.map(row =>
+            row.id === id ? { ...row, [field]: value } : row
+        ));
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        const itemName = itemMode === 'new' ? newItemName : selectedGroup;
+        if (!itemName) {
+            alert("Please enter or select a product name.");
+            return;
+        }
+
+        // Validate rows
+        const validVariants: { type: string; quantity: number }[] = [];
+        for (const row of variantRows) {
+            const type = row.typeMode === 'new' ? row.newType : row.selectedType;
+            const quantity = Number(row.quantity);
+
+            // Allow empty type (Standard) if user intended, but generally enforce input if "New Type" is selected and typed
+            // If type is empty, we can default to 'Standard' or null in backend handling, but let's pass it as is.
+
+            if (quantity > 0) {
+                validVariants.push({
+                    type: type || 'Standard',
+                    quantity
+                });
+            }
+        }
+
+        if (validVariants.length === 0) {
+            alert("Please add at least one variant with a quantity.");
+            return;
+        }
+
         onSubmit({
-            sku,
-            name,
-            category,
-            quantity: Number(quantity),
-            unit_price: Number(price),
-            min_stock_level: Number(minStock),
-            location,
-            supplier
+            item: itemName,
+            variants: validVariants
         });
         onClose();
     };
+
+    const existingGroupData = groups.find(g => g.name === selectedGroup);
 
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={initialData ? 'Edit Product' : 'Add New Product'}
-            description="Enter the product details below."
+            title="Add Stock"
+            description="Add one or more variants for a product."
             footer={
                 <>
                     <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSubmit}>{initialData ? 'Save Changes' : 'Add Product'}</Button>
+                    <Button onClick={handleSubmit}>Add to Inventory</Button>
                 </>
             }
         >
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">SKU</label>
-                        <Input placeholder="e.g. POL-001" value={sku} onChange={(e) => setSku(e.target.value)} required />
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+
+                {/* 1. Item Selection Section */}
+                <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                        <Box size={14} /> Product Selection
+                    </label>
+
+                    <div className="flex bg-black/20 p-1 rounded-lg border border-white/5 mb-3">
+                        <button
+                            type="button"
+                            onClick={() => handleItemModeChange('new')}
+                            className={clsx("flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
+                                itemMode === 'new' ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-white"
+                            )}
+                        >
+                            New Product
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleItemModeChange('existing')}
+                            className={clsx("flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
+                                itemMode === 'existing' ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-white"
+                            )}
+                        >
+                            Existing Product
+                        </button>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">Category</label>
-                        <Select
-                            options={[
-                                { value: 'Polyethylene', label: 'Polyethylene' },
-                                { value: 'Polypropylene', label: 'Polypropylene' },
-                                { value: 'PVC', label: 'PVC' },
-                                { value: 'Engineering', label: 'Engineering' }
-                            ]}
-                            value={category}
-                            onChange={setCategory}
-                            placeholder="Select Category"
+
+                    {itemMode === 'new' ? (
+                        <Input
+                            placeholder="Enter Product Name (e.g. ABS Granules)"
+                            value={newItemName}
+                            onChange={(e) => setNewItemName(e.target.value)}
+                            autoFocus
                         />
+                    ) : (
+                        <div className="relative">
+                            <select
+                                value={selectedGroup}
+                                onChange={(e) => setSelectedGroup(e.target.value)}
+                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50 appearance-none cursor-pointer hover:bg-white/5 transition-colors"
+                            >
+                                <option value="" disabled>Select a product...</option>
+                                {groups.map(g => (
+                                    <option key={g.name} value={g.name} className="bg-[#111]">{g.name}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0.5L5 5.5L10 0.5H0Z" /></svg>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* 2. Variants Section */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <Layers size={14} /> Variants & Quantities
+                        </label>
+                        <button
+                            type="button"
+                            onClick={addVariantRow}
+                            className="text-xs text-primary hover:text-primary-300 font-bold flex items-center gap-1"
+                        >
+                            <Plus size={12} /> Add Row
+                        </button>
+                    </div>
+
+                    <div className="space-y-2">
+                        {variantRows.map((row, index) => (
+                            <div key={row.id} className="grid grid-cols-12 gap-2 items-start bg-white/5 p-2 rounded-lg border border-white/5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                {/* Type Selection */}
+                                <div className="col-span-7 space-y-2">
+                                    {itemMode === 'existing' && existingGroupData && (
+                                        <div className="flex gap-2 mb-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateRow(row.id, 'typeMode', 'existing')}
+                                                className={clsx("text-[10px] uppercase font-bold px-2 py-0.5 rounded border transition-colors",
+                                                    row.typeMode === 'existing' ? "bg-primary/20 text-primary border-primary/20" : "bg-transparent text-gray-600 border-transparent hover:bg-white/5"
+                                                )}
+                                            >
+                                                Existing
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateRow(row.id, 'typeMode', 'new')}
+                                                className={clsx("text-[10px] uppercase font-bold px-2 py-0.5 rounded border transition-colors",
+                                                    row.typeMode === 'new' ? "bg-primary/20 text-primary border-primary/20" : "bg-transparent text-gray-600 border-transparent hover:bg-white/5"
+                                                )}
+                                            >
+                                                New Type
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {row.typeMode === 'existing' && itemMode === 'existing' ? (
+                                        <div className="relative">
+                                            <select
+                                                value={row.selectedType}
+                                                onChange={(e) => updateRow(row.id, 'selectedType', e.target.value)}
+                                                className="w-full bg-black/30 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50 appearance-none cursor-pointer"
+                                            >
+                                                <option value="" disabled>Select Type...</option>
+                                                {existingGroupData?.variants.map(v => (
+                                                    <option key={v.id} value={v.type || ''} className="bg-[#111]">{v.type || 'Standard'}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ) : (
+                                        <Input
+                                            placeholder="Type (e.g. Natural)"
+                                            value={row.newType}
+                                            onChange={(e) => updateRow(row.id, 'newType', e.target.value)}
+                                            className="h-8 text-xs"
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Quantity */}
+                                <div className="col-span-4 mt-auto">
+                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold mb-1">Qty (kg)</label>}
+                                    <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={row.quantity}
+                                        onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
+                                        className="h-8 text-right font-mono text-xs"
+                                        min="0"
+                                    />
+                                </div>
+
+                                {/* Delete Action */}
+                                <div className="col-span-1 flex justify-center mt-auto pb-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeVariantRow(row.id)}
+                                        disabled={variantRows.length === 1}
+                                        className="text-gray-500 hover:text-destructive disabled:opacity-30 disabled:hover:text-gray-500 transition-colors"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Product Name</label>
-                    <Input placeholder="e.g. HDPE Granules" value={name} onChange={(e) => setName(e.target.value)} required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">Quantity (kg)</label>
-                        <Input type="number" placeholder="0" value={quantity} onChange={(e) => setQuantity(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">Unit Price (₹)</label>
-                        <Input type="number" placeholder="0.00" value={price} onChange={(e) => setPrice(e.target.value)} required />
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">Min Stock Level</label>
-                        <Input type="number" placeholder="100" value={minStock} onChange={(e) => setMinStock(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-300">Location</label>
-                        <Input placeholder="Warehouse A-01" value={location} onChange={(e) => setLocation(e.target.value)} />
-                    </div>
-                </div>
-            </form>
+            </div>
         </Modal>
     );
 }

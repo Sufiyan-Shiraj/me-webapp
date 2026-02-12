@@ -7,15 +7,28 @@ import AnalyticsChart from '@/components/dashboard/AnalyticsChart';
 import { Select } from '@/components/ui/Select';
 import { Download, TrendingUp, Calendar } from 'lucide-react';
 
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+
 export default function AnalyticsPage() {
+    const { user, isLoading } = useAuth();
+    const router = useRouter();
     const [timeRange, setTimeRange] = useState('7d');
     const [salesData, setSalesData] = useState<any[]>([]);
     const [kpiStats, setKpiStats] = useState([
-        { label: 'Total Revenue', value: '₹24,50,000', change: '+12.5%', trend: 'up' },
         { label: 'Total Sales', value: '1,204', change: '+5.2%', trend: 'up' },
-        { label: 'Avg Order Value', value: '₹8,432', change: '-1.2%', trend: 'down' },
         { label: 'Active Customers', value: '320', change: '+8.4%', trend: 'up' },
     ]);
+
+    React.useEffect(() => {
+        if (!isLoading && user?.role !== 'admin') {
+            router.push('/dashboard');
+        }
+    }, [user, isLoading, router]);
+
+    if (isLoading || user?.role !== 'admin') {
+        return null; // Or a loading spinner
+    }
 
     // Mock Data Generators
     const generateRandomData = (range: string) => {
@@ -37,9 +50,7 @@ export default function AnalyticsPage() {
         const randomPercent = () => (Math.random() * 15 - 5).toFixed(1);
         const randomValue = (base: number) => Math.floor(base * (0.8 + Math.random() * 0.4)).toLocaleString('en-IN');
         return [
-            { label: 'Total Revenue', value: `₹${randomValue(2500000)}`, change: `${randomPercent()}%`, trend: Math.random() > 0.5 ? 'up' : 'down' },
             { label: 'Total Sales', value: randomValue(1200), change: `${randomPercent()}%`, trend: Math.random() > 0.5 ? 'up' : 'down' },
-            { label: 'Avg Order Value', value: `₹${randomValue(8000)}`, change: `${randomPercent()}%`, trend: Math.random() > 0.5 ? 'up' : 'down' },
             { label: 'Active Customers', value: randomValue(300), change: `${randomPercent()}%`, trend: Math.random() > 0.5 ? 'up' : 'down' },
         ];
     };
@@ -83,7 +94,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {kpiStats.map((stat, i) => (
                     <Card key={i} className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass group hover:border-primary/20 transition-all">
                         <CardBody className="p-5">
@@ -120,28 +131,24 @@ export default function AnalyticsPage() {
                                 <tr>
                                     <th className="px-4 py-3 rounded-l-lg">Product Name</th>
                                     <th className="px-4 py-3">Category</th>
-                                    <th className="px-4 py-3">Sales</th>
-                                    <th className="px-4 py-3 text-right rounded-r-lg">Revenue</th>
+                                    <th className="px-4 py-3 text-right rounded-r-lg">Sales</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
                                 <tr className="group hover:bg-white/5 transition-colors">
                                     <td className="px-4 py-3 font-medium text-white">HDPE Granules - Natural</td>
                                     <td className="px-4 py-3 text-gray-400">Polyethylene</td>
-                                    <td className="px-4 py-3 text-white">1,240 kg</td>
-                                    <td className="px-4 py-3 text-right font-mono text-primary">₹1,06,020</td>
+                                    <td className="px-4 py-3 text-right text-white">1,240 kg</td>
                                 </tr>
                                 <tr className="group hover:bg-white/5 transition-colors">
                                     <td className="px-4 py-3 font-medium text-white">LDPE Film Grade</td>
                                     <td className="px-4 py-3 text-gray-400">Polyethylene</td>
-                                    <td className="px-4 py-3 text-white">850 kg</td>
-                                    <td className="px-4 py-3 text-right font-mono text-primary">₹78,200</td>
+                                    <td className="px-4 py-3 text-right text-white">850 kg</td>
                                 </tr>
                                 <tr className="group hover:bg-white/5 transition-colors">
                                     <td className="px-4 py-3 font-medium text-white">Polypropylene Homopolymer</td>
                                     <td className="px-4 py-3 text-gray-400">Polypropylene</td>
-                                    <td className="px-4 py-3 text-white">620 kg</td>
-                                    <td className="px-4 py-3 text-right font-mono text-primary">₹48,515</td>
+                                    <td className="px-4 py-3 text-right text-white">620 kg</td>
                                 </tr>
                             </tbody>
                         </table>

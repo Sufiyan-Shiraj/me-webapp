@@ -3,7 +3,8 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, ShieldCheck, PieChart } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
+import { navItems } from '@/config/navigation';
 import { useAuth } from '@/context/AuthContext';
 import clsx from 'clsx';
 // Inline styles for simplicity or could use modules. keeping inline/tailwind-like with globals.
@@ -17,13 +18,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     const pathname = usePathname();
     const { logout, user } = useAuth(); // User might be null initially
 
-    const navItems = [
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Inventory', href: '/inventory', icon: Package },
-        { name: 'Sales', href: '/sales', icon: ShoppingCart },
-        { name: 'Analytics', href: '/analytics', icon: PieChart },
-        { name: 'Settings', href: '/settings', icon: Settings },
-    ];
+
 
     const isActive = (path: string) => pathname.startsWith(path);
 
@@ -62,7 +57,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     <div className="flex-1 overflow-y-auto py-6 px-4">
                         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-3">Main Menu</div>
                         <nav className="space-y-1">
-                            {navItems.map((item) => (
+                            {navItems.filter(item => item.name !== 'Analytics' || user?.role === 'admin').map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}

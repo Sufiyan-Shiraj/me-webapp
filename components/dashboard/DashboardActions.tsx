@@ -11,10 +11,10 @@ export default function DashboardActions() {
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
     const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
 
-    const handleProductSubmit = (item: Omit<InventoryItem, 'id' | 'last_updated'>) => {
-        console.log("New Product Added from Dashboard:", item);
-        // In a real app, this would update a global context or trigger a refetch
-        alert(`Product "${item.name}" added successfully!`);
+    const handleProductSubmit = (data: { item: string; variants: { type: string; quantity: number }[] }) => {
+        console.log("Adding product:", data);
+        setIsProductModalOpen(false);
+        // TODO: Implement actual add logic
     };
 
     const handleSaleSubmit = (invoice: Omit<SaleInvoice, 'id' | 'items'>) => {

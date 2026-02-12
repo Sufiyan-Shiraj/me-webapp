@@ -9,17 +9,11 @@ export interface User {
 }
 
 export interface InventoryItem {
-    id: string;
-    sku: string;
-    name: string;
-    category: string;
-    quantity: number;
-    unit_price: number;
-    min_stock_level: number;
-    supplier?: string;
-    location?: string;
-    description?: string;
-    last_updated: string;
+    id: string; // uuid
+    item_id: number; // bigint
+    item: string; // name
+    type: string | null; // variant
+    quantity: number; // bigint
 }
 
 export type SaleStatus = 'paid' | 'pending' | 'overdue' | 'cancelled';

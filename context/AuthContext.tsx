@@ -3,11 +3,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Role } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (username: string, password: string, company: 'me' | 'mayfield') => Promise<void>;
     logout: () => Promise<void>;
     checkRole: (allowedRoles: Role[]) => boolean;
 }
@@ -41,18 +42,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (username: string, password: string, company: 'me' | 'mayfield') => {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // In a real app, we would authenticate with Supabase here
-        // const { data, error } = await supabase.auth.signInWithPassword({ ... });
+        try {
+            // 1. Direct Query to public.users table (Custom Auth)
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .eq('password', password) // Basic plaintext password match as requested
+                .single();
 
-        setUser(MOCK_USER);
-        localStorage.setItem('app_user', JSON.stringify(MOCK_USER));
-        setIsLoading(false);
-        router.push('/dashboard');
+            if (userError || !userData) {
+                throw new Error('Invalid login credentials');
+            }
+
+            // Check if user has access to selected company
+            if (!userData[company]) {
+                throw new Error(`You do not have access to ${company === 'me' ? 'ME Enterprises' : 'Mayfield'}`);
+            }
+
+            // 3. Set User Session
+            const appUser: User = {
+                id: userData.id,
+                email: username + '@' + company + '.com', // Mock email as it's not in the table
+                name: userData.username,
+                role: userData.admin ? 'admin' : 'staff', // Basic role mapping
+                avatar_url: `https://ui-avatars.com/api/?name=${userData.username}&background=random`,
+            };
+
+            setUser(appUser);
+            localStorage.setItem('app_user', JSON.stringify(appUser));
+            router.push('/dashboard');
+
+        } catch (error: any) {
+            console.error('Login failed:', error);
+            // Re-throw to be handled by UI
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const logout = async () => {

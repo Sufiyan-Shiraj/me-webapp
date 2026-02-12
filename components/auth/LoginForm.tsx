@@ -10,7 +10,8 @@ import Link from 'next/link';
 
 export default function LoginForm() {
     const { login } = useAuth();
-    const [email, setEmail] = useState('');
+    const [company, setCompany] = useState<'me' | 'mayfield'>('me');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -22,12 +23,19 @@ export default function LoginForm() {
         setIsLoading(true);
 
         try {
-            if (!email || !password) {
+            if (!username || !password) {
                 throw new Error('Please fill in all fields');
             }
-            await login(email, password);
+            await login(username, password, company);
         } catch (err: any) {
-            setError(err.message || 'Failed to login');
+            console.error('Login error:', err);
+            if (err.message === 'Invalid login credentials') {
+                setError('Invalid username or password. Please try again.');
+            } else if (err.message.includes('not have access')) {
+                setError(err.message);
+            } else {
+                setError('Failed to login. Please check your connection and try again.');
+            }
             setIsLoading(false);
         }
     };
@@ -52,17 +60,41 @@ export default function LoginForm() {
 
             <form onSubmit={handleSubmit}>
                 <CardBody className="flex flex-col gap-5 py-6">
+                    {/* Company Selection */}
+                    <div className="flex gap-2 p-1 bg-black/20 rounded-lg border border-white/5">
+                        <button
+                            type="button"
+                            onClick={() => setCompany('me')}
+                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${company === 'me'
+                                ? 'bg-primary text-black shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            ME Enterprises
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setCompany('mayfield')}
+                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${company === 'mayfield'
+                                ? 'bg-primary text-black shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            Mayfield
+                        </button>
+                    </div>
+
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-primary transition-colors">
                             <Mail size={18} />
                         </div>
                         <Input
-                            id="email"
-                            type="email"
-                            // label="Email Address"
-                            placeholder="name@company.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            id="username"
+                            type="text"
+                            // label="Username"
+                            placeholder="Enter username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             className="bg-black/20 border-white/10 pl-10 focus:border-primary/50 placeholder:text-gray-600"
                             required
                             autoComplete="username"

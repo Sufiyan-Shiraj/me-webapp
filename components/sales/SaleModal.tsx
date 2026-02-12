@@ -15,23 +15,21 @@ interface SaleModalProps {
 export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
     const [customerName, setCustomerName] = useState('');
     const [invoiceNumber, setInvoiceNumber] = useState('');
-    const [total, setTotal] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const totalNum = Number(total);
         onSubmit({
             invoice_number: invoiceNumber,
             date,
             customer_name: customerName,
-            subtotal: totalNum * 0.9,
-            tax: totalNum * 0.1,
-            total: totalNum,
+            subtotal: 0,
+            tax: 0,
+            total: 0,
             status: 'paid'
         });
         onClose();
-        setCustomerName(''); setInvoiceNumber(''); setTotal('');
+        setCustomerName(''); setInvoiceNumber('');
     };
 
     return (
@@ -64,10 +62,7 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                     <Input placeholder="Customer or Company Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} required />
                 </div>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-300">Total Amount (₹)</label>
-                    <Input type="number" placeholder="0.00" value={total} onChange={(e) => setTotal(e.target.value)} required />
-                </div>
+
             </form>
         </Modal>
     );

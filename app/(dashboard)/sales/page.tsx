@@ -84,12 +84,11 @@ export default function SalesPage() {
     };
 
     const handleExport = () => {
-        const headers = ['Invoice #', 'Date', 'Customer', 'Total', 'Status'];
+        const headers = ['Invoice #', 'Date', 'Customer', 'Status'];
         const rows = data.map(inv => [
             inv.invoice_number,
             inv.date,
             inv.customer_name,
-            inv.total,
             inv.status
         ]);
 
@@ -156,7 +155,6 @@ export default function SalesPage() {
                                 <TableHead sortable sortDirection={sortField === 'invoice_number' ? sortDirection : null} onSort={() => handleSort('invoice_number')}>Invoice #</TableHead>
                                 <TableHead sortable sortDirection={sortField === 'date' ? sortDirection : null} onSort={() => handleSort('date')}>Date</TableHead>
                                 <TableHead sortable sortDirection={sortField === 'customer_name' ? sortDirection : null} onSort={() => handleSort('customer_name')}>Customer</TableHead>
-                                <TableHead sortable sortDirection={sortField === 'total' ? sortDirection : null} onSort={() => handleSort('total')}>Amount (₹)</TableHead>
                                 <TableHead sortable sortDirection={sortField === 'status' ? sortDirection : null} onSort={() => handleSort('status')}>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -172,7 +170,6 @@ export default function SalesPage() {
                                         <TableCell className="font-mono text-xs font-medium text-gray-400 group-hover:text-primary/80 transition-colors">{inv.invoice_number}</TableCell>
                                         <TableCell className="text-gray-400 text-sm">{inv.date}</TableCell>
                                         <TableCell className="font-medium text-foreground group-hover:text-white transition-colors">{inv.customer_name}</TableCell>
-                                        <TableCell className="font-mono text-sm tabular-nums text-gray-300">₹{inv.total.toLocaleString('en-IN')}</TableCell>
                                         <TableCell>
                                             <span className={clsx(styles.badge, getStatusBadgeClass(inv.status), 'shadow-sm uppercase')}>
                                                 {inv.status}
