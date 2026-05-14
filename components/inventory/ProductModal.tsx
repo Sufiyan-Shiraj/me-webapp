@@ -149,7 +149,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                 </>
             }
         >
-            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-6">
 
                 {/* 1. Item Selection Section */}
                 <div className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
@@ -212,9 +212,9 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
 
                     <div className="space-y-2">
                         {variantRows.map((row, index) => (
-                            <div key={row.id} className="grid grid-cols-12 gap-2 items-start bg-gray-50/50 p-2 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div key={row.id} className="flex items-end gap-2 bg-gray-50/50 p-3 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {/* Type Selection */}
-                                <div className="col-span-7 space-y-2">
+                                <div className="flex-1 space-y-1">
                                     {itemMode === 'existing' && existingGroupData && (
                                         <div className="flex gap-2 mb-1">
                                             <button
@@ -244,33 +244,31 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                             value={row.selectedType}
                                             onChange={(val) => updateRow(row.id, 'selectedType', val)}
                                             placeholder="Select Type..."
-                                            className="h-8"
                                         />
                                     ) : (
                                         <Input
                                             placeholder="Type (e.g. Natural)"
                                             value={row.newType}
                                             onChange={(e) => updateRow(row.id, 'newType', e.target.value)}
-                                            className="h-8 text-xs"
                                         />
                                     )}
                                 </div>
 
-                                <div className="col-span-3 mt-auto">
-                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold mb-1">Qty</label>}
+                                <div className="w-24 space-y-1">
+                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold">Qty</label>}
                                     <Input
                                         type="number"
                                         placeholder="0"
                                         value={row.quantity}
                                         onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
-                                        className="h-8 text-right font-mono text-xs"
+                                        className="text-right font-mono"
                                         min="0"
                                     />
                                 </div>
 
                                 {/* Unit */}
-                                <div className="col-span-2 mt-auto">
-                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold mb-1">Unit</label>}
+                                <div className="w-20 space-y-1">
+                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold">Unit</label>}
                                     <Select
                                         options={[
                                             { value: 'kg', label: 'kg' },
@@ -281,21 +279,20 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                         ]}
                                         value={row.unit}
                                         onChange={(val) => updateRow(row.id, 'unit', val)}
-                                        className="h-8"
                                     />
                                 </div>
 
                                 {/* Delete Action */}
-                                <div className="col-span-1 flex justify-center mt-auto pb-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => removeVariantRow(row.id)}
-                                        disabled={variantRows.length === 1}
-                                        className="text-gray-400 hover:text-destructive disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => removeVariantRow(row.id)}
+                                    disabled={variantRows.length === 1}
+                                    className="px-2 text-gray-400 hover:text-destructive hover:bg-destructive-bg disabled:opacity-30"
+                                    title="Remove item"
+                                >
+                                    <Trash2 size={18} />
+                                </Button>
                             </div>
                         ))}
                     </div>
