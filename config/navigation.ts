@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, Settings, PieChart } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Settings, PieChart, Users } from 'lucide-react';
 
 export const navItems = [
     { 
@@ -27,5 +27,10 @@ export const navItems = [
         name: 'Settings', 
         href: '/settings', 
         icon: Settings 
+    },
+    { 
+        name: 'Users', 
+        href: '/users', 
+        icon: Users 
     },
 ];

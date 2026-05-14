@@ -7,112 +7,257 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Plus, Search, Filter, FileText, Download, TrendingUp } from 'lucide-react';
-import { SaleInvoice } from '@/lib/types';
+import { SaleInvoice, InvoiceItem, ItemStatus } from '@/lib/types';
 import clsx from 'clsx';
 import styles from '@/components/ui/ui.module.css';
 import { SaleModal } from '@/components/sales/SaleModal';
+import { motion } from 'framer-motion';
 
-// Mock Data with Rupees
-const INVOICES: SaleInvoice[] = [
-    { id: '1', invoice_number: 'INV-001', date: '2023-11-01', customer_name: 'Acme Corp', subtotal: 85000, tax: 8500, total: 93500, status: 'paid', items: [] },
-    { id: '2', invoice_number: 'INV-002', date: '2023-11-02', customer_name: 'Global Industries', subtotal: 210000, tax: 21000, total: 231000, status: 'pending', items: [] },
-    { id: '3', invoice_number: 'INV-003', date: '2023-11-03', customer_name: 'TechStart Inc', subtotal: 42000, tax: 4200, total: 46200, status: 'overdue', items: [] },
-    { id: '4', invoice_number: 'INV-004', date: '2023-11-04', customer_name: 'John Doe', subtotal: 12500, tax: 1250, total: 13750, status: 'paid', items: [] },
-    { id: '5', invoice_number: 'INV-005', date: '2023-11-05', customer_name: 'Small Biz LLC', subtotal: 100000, tax: 10000, total: 110000, status: 'cancelled', items: [] },
-    { id: '6', invoice_number: 'INV-006', date: '2023-11-06', customer_name: 'Kerala Polymers', subtotal: 65000, tax: 6500, total: 71500, status: 'paid', items: [] },
-    { id: '7', invoice_number: 'INV-007', date: '2023-11-07', customer_name: 'Kochi Plastics', subtotal: 180000, tax: 18000, total: 198000, status: 'pending', items: [] },
-    { id: '8', invoice_number: 'INV-008', date: '2023-11-08', customer_name: 'India Makers', subtotal: 32000, tax: 3200, total: 35200, status: 'paid', items: [] },
-];
+import { supabase } from '@/lib/supabase';
 
-type SortField = keyof SaleInvoice;
-type SortDirection = 'asc' | 'desc' | null;
+// --- Types ---
+interface SaleRowProps {
+    sale: SaleInvoice;
+    onUpdateItem?: (id: string, updates: Partial<InvoiceItem>) => void;
+}
+
+const SaleRow = ({ sale, onUpdateItem }: SaleRowProps) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    // Derived statuses
+    const getItemStatus = (item: InvoiceItem): ItemStatus => {
+        if (item.done) return 'completed';
+        if (item.pending > 0) return 'pending';
+        return 'waiting';
+    };
+
+    const overallStatus = useMemo(() => {
+        if (!sale.items || sale.items.length === 0) return 'waiting';
+        const allCompleted = sale.items.every(item => item.done);
+        if (allCompleted) return 'completed';
+        const anyPending = sale.items.some(item => item.pending > 0);
+        if (anyPending) return 'pending';
+        return 'waiting';
+    }, [sale.items]);
+
+    const getStatusBadgeClass = (status: string) => {
+        switch (status) {
+            case 'completed': return styles['badge-success'];
+            case 'pending': return styles['badge-warning'];
+            case 'waiting': return styles['badge-info'];
+            default: return styles['badge-info'];
+        }
+    };
+
+    return (
+        <>
+            <TableRow
+                className={clsx("cursor-pointer group", styles['animate-slide-up'])}
+                onClick={() => setIsOpen(!isOpen)}
+            >
+                <TableCell className="font-mono text-xs font-medium text-gray-400 group-hover:text-primary/80 transition-colors">
+                    <div className="flex items-center gap-2">
+                        <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
+                            <svg width="12" height="7" viewBox="0 0 12 7" fill="none" className="text-gray-500">
+                                <path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        </motion.div>
+                        #{sale.sale_id}
+                    </div>
+                </TableCell>
+                <TableCell className="text-gray-400 text-sm">{new Date(sale.date).toLocaleDateString()}</TableCell>
+                <TableCell className="font-medium text-foreground group-hover:text-white transition-colors">{sale.customer_name}</TableCell>
+                <TableCell>
+                    <span className={clsx(styles.badge, getStatusBadgeClass(overallStatus), 'shadow-sm uppercase')}>
+                        {overallStatus}
+                    </span>
+                </TableCell>
+                <TableCell className="text-right">
+                    <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-all">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-primary" title="View">
+                            <FileText size={15} />
+                        </Button>
+                    </div>
+                </TableCell>
+            </TableRow>
+
+            {/* Expandable Items Row */}
+            {isOpen && (
+                <TableRow className="bg-black/20 border-l-2 border-primary/50">
+                    <TableCell colSpan={5} className="p-0">
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            className="p-4 bg-white/5"
+                        >
+                            <div className="grid grid-cols-5 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5 pb-2 mb-2">
+                                <div className="col-span-2">Item / Variant</div>
+                                <div className="text-center">Qty / Pending</div>
+                                <div className="text-center">Status</div>
+                                <div className="text-right">Mark Done</div>
+                            </div>
+                            {sale.items.map((item) => {
+                                const status = getItemStatus(item);
+                                return (
+                                    <div key={item.id} className="grid grid-cols-5 gap-4 items-center py-2 border-b border-white/5 last:border-0">
+                                        <div className="col-span-2 text-sm font-medium text-white">
+                                            {item.product_name}
+                                            <span className="text-[10px] text-gray-500 block">{item.variant}</span>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-xs text-white">{item.quantity} nos</div>
+                                            {item.pending > 0 && <div className="text-[10px] text-warning">{item.pending} pending</div>}
+                                        </div>
+                                        <div className="text-center">
+                                            <span className={clsx(styles.badge, getStatusBadgeClass(status), 'text-[10px] py-0 px-2')}>
+                                                {status}
+                                            </span>
+                                        </div>
+                                        <div className="text-right">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={item.done}
+                                                onChange={(e) => onUpdateItem?.(item.id, { done: e.target.checked })}
+                                                className="w-4 h-4 rounded border-white/10 bg-black/40 text-primary focus:ring-primary/50 cursor-pointer"
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </motion.div>
+                    </TableCell>
+                </TableRow>
+            )}
+        </>
+    );
+};
 
 export default function SalesPage() {
-    const [data, setData] = useState<SaleInvoice[]>(INVOICES);
+    const [data, setData] = useState<SaleInvoice[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortField, setSortField] = useState<SortField>('date');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    useEffect(() => {
+        fetchSales();
+    }, []);
+
+    const fetchSales = async () => {
+        setIsLoading(true);
+        try {
+            const { data: rows, error } = await supabase
+                .from('me_sales')
+                .select(`
+                    id,
+                    sale_id,
+                    created_at,
+                    quantity,
+                    pending,
+                    done,
+                    done_time,
+                    customers (
+                        id,
+                        name
+                    ),
+                    me_item_types (
+                        id,
+                        name,
+                        me_items (
+                            id,
+                            name
+                        )
+                    )
+                `)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Group by sale_id
+            const grouped = new Map<number, SaleInvoice>();
+            rows?.forEach((row: any) => {
+                const saleId = row.sale_id;
+                
+                // Safety checks for joins
+                const customer = row.customers && !Array.isArray(row.customers) ? row.customers : { id: 'unknown', name: 'Unknown Customer' };
+                const itemType = row.me_item_types && !Array.isArray(row.me_item_types) ? row.me_item_types : null;
+                const baseItem = itemType?.me_items && !Array.isArray(itemType.me_items) ? itemType.me_items : { name: 'Unknown Item' };
+                
+                if (!grouped.has(saleId)) {
+                    grouped.set(saleId, {
+                        sale_id: saleId,
+                        date: row.created_at,
+                        customer_id: customer.id,
+                        customer_name: customer.name,
+                        items: []
+                    });
+                }
+                
+                const item: InvoiceItem = {
+                    id: row.id,
+                    item_type_id: itemType?.id || 'unknown',
+                    product_name: baseItem.name,
+                    variant: itemType?.name || 'Standard',
+                    quantity: row.quantity,
+                    pending: row.pending || 0,
+                    done: row.done,
+                    done_time: row.done_time
+                };
+                grouped.get(saleId)!.items.push(item);
+            });
+
+            setData(Array.from(grouped.values()));
+        } catch (error: any) {
+            console.error("Error fetching sales:", error?.message || error, error?.code, error?.details);
+            // Fallback to empty
+            setData([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleUpdateItem = async (itemId: string, updates: Partial<InvoiceItem>) => {
+        try {
+            const { error } = await supabase
+                .from('me_sales')
+                .update({ 
+                    done: updates.done,
+                    done_time: updates.done ? new Date().toISOString() : null
+                })
+                .eq('id', itemId);
+
+            if (error) throw error;
+            
+            // Optimistic update
+            setData(prev => prev.map(sale => ({
+                ...sale,
+                items: sale.items.map(item => item.id === itemId ? { ...item, ...updates } : item)
+            })));
+        } catch (error) {
+            console.error("Error updating item:", error);
+        }
+    };
 
     // Filtering
     const filteredData = useMemo(() => {
         return data.filter(inv =>
             inv.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase())
+            inv.sale_id.toString().includes(searchQuery)
         );
     }, [searchQuery, data]);
 
-    // Sorting
-    const sortedData = useMemo(() => {
-        if (!sortDirection) return filteredData;
-
-        return [...filteredData].sort((a, b) => {
-            const aValue = a[sortField] ?? '';
-            const bValue = b[sortField] ?? '';
-
-            if (aValue === bValue) return 0;
-            const comparison = aValue < bValue ? -1 : 1;
-            return sortDirection === 'asc' ? comparison : -comparison;
-        });
-    }, [filteredData, sortField, sortDirection]);
-
     // Pagination
-    const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-    const paginatedData = sortedData.slice(
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+    const paginatedData = filteredData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
 
-    const handleSort = (field: SortField) => {
-        if (sortField === field) {
-            setSortDirection(prev => prev === 'asc' ? 'desc' : prev === 'desc' ? null : 'asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
-
-    const handleNewSale = (invoiceData: Omit<SaleInvoice, 'id' | 'items'>) => {
-        const newInvoice: SaleInvoice = {
-            id: Math.random().toString(36).substr(2, 9),
-            items: [],
-            ...invoiceData
-        };
-        setData(prev => [newInvoice, ...prev]);
-    };
-
-    const handleExport = () => {
-        const headers = ['Invoice #', 'Date', 'Customer', 'Status'];
-        const rows = data.map(inv => [
-            inv.invoice_number,
-            inv.date,
-            inv.customer_name,
-            inv.status
-        ]);
-
-        const csvContent = "data:text/csv;charset=utf-8,"
-            + headers.join(",") + "\n"
-            + rows.map(e => e.join(",")).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "sales_export.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const getStatusBadgeClass = (status: string) => {
-        switch (status) {
-            case 'paid': return styles['badge-success'];
-            case 'pending': return styles['badge-warning'];
-            case 'overdue': return styles['badge-danger'];
-            case 'cancelled': return styles['badge-info']; // or gray
-            default: return styles['badge-info'];
-        }
+    const handleNewSale = async (invoiceData: any) => {
+        // Mock add for now as we don't have the full multi-item insert logic here yet
+        fetchSales();
     };
 
     return (
@@ -120,7 +265,7 @@ export default function SalesPage() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-sans font-bold tracking-tight text-primary">Sales Transactions</h1>
-                    <p className="text-sm text-gray-400 mt-1">Manage and track your sales invoices.</p>
+                    <p className="text-sm text-gray-400 mt-1">Manage and track your customer orders.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button icon={Plus} className="shadow-lg shadow-primary/20" onClick={() => setIsModalOpen(true)}>
@@ -133,16 +278,12 @@ export default function SalesPage() {
             <div className="flex flex-col lg:flex-row justify-between gap-4 p-4 rounded-xl bg-surface backdrop-blur-md border border-border shadow-sm">
                 <div className="relative w-full lg:w-96 group">
                     <Input
-                        placeholder="Search sales..."
+                        placeholder="Search customer or sale ID..."
                         className="pl-10 bg-black/20 border-white/5 focus:border-primary/50 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="secondary" icon={Filter} size="sm">Filter</Button>
-                    <Button variant="secondary" icon={FileText} size="sm" onClick={handleExport}>Export</Button>
                 </div>
             </div>
 
@@ -152,48 +293,36 @@ export default function SalesPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead sortable sortDirection={sortField === 'invoice_number' ? sortDirection : null} onSort={() => handleSort('invoice_number')}>Invoice #</TableHead>
-                                <TableHead sortable sortDirection={sortField === 'date' ? sortDirection : null} onSort={() => handleSort('date')}>Date</TableHead>
-                                <TableHead sortable sortDirection={sortField === 'customer_name' ? sortDirection : null} onSort={() => handleSort('customer_name')}>Customer</TableHead>
-                                <TableHead sortable sortDirection={sortField === 'status' ? sortDirection : null} onSort={() => handleSort('status')}>Status</TableHead>
+                                <TableHead>Sale ID</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Customer</TableHead>
+                                <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedData.length > 0 ? (
-                                paginatedData.map((inv, index) => (
-                                    <TableRow
-                                        key={inv.id}
-                                        className={clsx("cursor-pointer group", styles['animate-slide-up'])}
-                                        style={{ animationDelay: `${index * 50}ms` }}
-                                    >
-                                        <TableCell className="font-mono text-xs font-medium text-gray-400 group-hover:text-primary/80 transition-colors">{inv.invoice_number}</TableCell>
-                                        <TableCell className="text-gray-400 text-sm">{inv.date}</TableCell>
-                                        <TableCell className="font-medium text-foreground group-hover:text-white transition-colors">{inv.customer_name}</TableCell>
-                                        <TableCell>
-                                            <span className={clsx(styles.badge, getStatusBadgeClass(inv.status), 'shadow-sm uppercase')}>
-                                                {inv.status}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-all">
-                                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-primary" title="View">
-                                                    <FileText size={15} />
-                                                </Button>
-                                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-primary" title="Download">
-                                                    <Download size={15} />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
+                            {isLoading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="py-20 text-center text-gray-500">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-3"></div>
+                                        Loading sales...
+                                    </TableCell>
+                                </TableRow>
+                            ) : paginatedData.length > 0 ? (
+                                paginatedData.map((inv) => (
+                                    <SaleRow 
+                                        key={inv.sale_id} 
+                                        sale={inv} 
+                                        onUpdateItem={handleUpdateItem} 
+                                    />
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={6}>
+                                    <TableCell colSpan={5}>
                                         <EmptyState
                                             variant={searchQuery ? "no-results" : "no-data"}
-                                            title={searchQuery ? "No invoices found" : "No sales yet"}
-                                            description="Create a new sale to see it here."
+                                            title={searchQuery ? "No sales found" : "No sales yet"}
+                                            description="Record a new sale to see it here."
                                             action={!searchQuery ? { label: "New Sale", onClick: () => setIsModalOpen(true) } : undefined}
                                         />
                                     </TableCell>
@@ -205,12 +334,12 @@ export default function SalesPage() {
             </div>
 
             {/* Pagination */}
-            {sortedData.length > 0 && (
+            {!isLoading && filteredData.length > 0 && (
                 <div className="rounded-xl border border-border shadow-sm mt-4">
                     <TablePagination
                         currentPage={currentPage}
                         totalPages={totalPages}
-                        totalItems={sortedData.length}
+                        totalItems={filteredData.length}
                         itemsPerPage={itemsPerPage}
                         onPageChange={setCurrentPage}
                         onItemsPerPageChange={setItemsPerPage}

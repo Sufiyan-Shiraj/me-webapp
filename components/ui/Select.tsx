@@ -53,7 +53,7 @@ export function Select({ options, value, onChange, className, placeholder = "Sel
 
             {/* Dropdown Menu */}
             <div className={clsx(
-                "absolute z-50 w-full mt-1 overflow-hidden p-1 rounded-xl bg-[#141414] border border-white/10 shadow-2xl backdrop-blur-xl origin-top transition-all duration-200",
+                "absolute z-50 w-full mt-1 overflow-hidden p-1 rounded-xl bg-black border border-white/20 shadow-[0_0_40px_rgba(0,0,0,1)] origin-top transition-all duration-200",
                 isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
             )}>
                 <div className="max-h-60 overflow-y-auto custom-scrollbar">

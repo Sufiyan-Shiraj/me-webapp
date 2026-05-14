@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Search, Download, Plus, Package, Tag, Edit } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { ProductModal } from './ProductModal';
 import { GroupEditModal } from './GroupEditModal';
+import { Select } from '@/components/ui/Select';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 import { InventoryItem } from '@/lib/types';
@@ -17,75 +19,6 @@ interface ProductGroup {
     name: string; // Maps to 'item' in DB
     variants: InventoryItem[]; // Array of items with same 'item' name but different 'type'
 }
-
-// --- Mock Data Generator ---
-const generateVariants = (itemName: string, baseId: number, types: string[]): InventoryItem[] => {
-    return types.map((type, i) => ({
-        id: `uuid-${baseId}-${i}`,
-        item_id: baseId,
-        item: itemName,
-        type: type,
-        quantity: Math.floor(Math.random() * 5000),
-    }));
-};
-
-const MOCK_GROUPS: ProductGroup[] = [
-    {
-        name: 'HDPE Granules',
-        variants: generateVariants('HDPE Granules', 101, ['Natural', 'Milky', 'Black', 'Blue', 'Red', 'Green'])
-    },
-    {
-        name: 'LDPE Film Grade',
-        variants: generateVariants('LDPE Film Grade', 102, ['Clear', 'Heavy Duty', 'Shrink', 'Lamination'])
-    },
-    {
-        name: 'LLDPE Rotomolding',
-        variants: generateVariants('LLDPE Rotomolding', 103, ['Basic', 'High Flow', 'UV Stabilized', 'Color Compounded'])
-    },
-    {
-        name: 'PP Homopolymer',
-        variants: generateVariants('PP Homopolymer', 104, ['Injection', 'Raffia', 'Film', 'Fiber', 'Thermoforming'])
-    },
-    {
-        name: 'PP Copolymer',
-        variants: generateVariants('PP Copolymer', 105, ['Impact', 'Random', 'High Impact', 'Clarified'])
-    },
-    {
-        name: 'PVC Resin',
-        variants: generateVariants('PVC Resin', 106, ['K-57', 'K-67', 'K-70', 'Suspension', 'Emulsion'])
-    },
-    {
-        name: 'PET Chips',
-        variants: generateVariants('PET Chips', 107, ['Bottle Grade', 'Textile Grade', 'Film Grade', 'Recycled'])
-    },
-    {
-        name: 'ABS Granules',
-        variants: generateVariants('ABS Granules', 108, ['High Impact', 'Heat Resistant', 'Flame Retardant', 'Transparent'])
-    },
-    {
-        name: 'Polycarbonate',
-        variants: generateVariants('Polycarbonate', 109, ['General Purpose', 'UV Stabilized', 'Optical Grade', 'Flame Retardant'])
-    },
-    {
-        name: 'Nylon 6',
-        variants: generateVariants('Nylon 6', 110, ['Unfilled', 'Glass Filled 15%', 'Glass Filled 30%', 'Impact Modified'])
-    },
-    {
-        name: 'Nylon 66',
-        variants: generateVariants('Nylon 66', 111, ['General Purpose', 'Heat Stabilized', 'Toughened', 'Glass Filled'])
-    },
-    {
-        name: 'Polystyrene',
-        variants: generateVariants('Polystyrene', 112, ['GPPS', 'HIPS', 'EPS', 'XPS'])
-    },
-    {
-        name: 'Masterbatch',
-        variants: generateVariants('Masterbatch', 113, ['White', 'Black', 'Filler', 'Color', 'UV', 'Antistatic'])
-    }
-];
-
-// Flatten for "Add/Edit" logic if needed, though for now we mostly read Groups
-const FLATTENED_INVENTORY: InventoryItem[] = MOCK_GROUPS.flatMap(g => g.variants);
 
 // --- Components ---
 
@@ -101,6 +34,7 @@ const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
     // Calculate total quantity for the group
     const totalQuantity = group.variants.reduce((acc, v) => acc + v.quantity, 0);
     const baseId = group.variants[0]?.item_id;
+    const primaryUnit = group.variants[0]?.unit || 'kg';
 
     // Determine overall status based on total quantity
     const isLowStock = totalQuantity < 1000; // Example threshold
@@ -122,16 +56,9 @@ const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
                 onClick={() => setIsOpen(!isOpen)}
                 className="p-4 cursor-pointer relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-25 transition-colors hover:from-gray-100 hover:to-gray-50"
             >
-                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Package size={80} />
-                </div>
-
                 <div className="relative z-10 flex justify-between items-start">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-gray-400 uppercase tracking-wider border border-white/5">
-                                ID: {baseId}
-                            </span>
                             <span className={clsx("px-2 py-0.5 rounded text-[10px] font-bold border truncate", status)}>
                                 {isOutOfStock ? 'Out of Stock' : isLowStock ? 'Low Stock' : 'In Stock'}
                             </span>
@@ -165,7 +92,7 @@ const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
                                 )}>
                                     {totalQuantity.toLocaleString()}
                                 </span>
-                                <span className="text-xs text-gray-500">kg</span>
+                                <span className="text-xs text-gray-500 truncate max-w-[40px]">{primaryUnit}</span>
                             </div>
                         </div>
                     </div>
@@ -191,7 +118,7 @@ const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
                 <div className="p-4 space-y-2 border-t border-white/5">
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         <div className="text-gray-500 text-xs font-bold uppercase tracking-wider pb-1 border-b border-white/5">Type / Variant</div>
-                        <div className="text-gray-500 text-xs font-bold uppercase tracking-wider pb-1 border-b border-white/5 text-right">Quantity (kg)</div>
+                        <div className="text-gray-500 text-xs font-bold uppercase tracking-wider pb-1 border-b border-white/5 text-right">Quantity ({primaryUnit})</div>
 
                         {group.variants.map((variant) => (
                             <React.Fragment key={variant.id}>
@@ -214,26 +141,113 @@ const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
 
 export default function InventoryTable() {
     const { checkRole } = useAuth();
-    const canEdit = checkRole(['admin', 'manager']);
+    const canEdit = checkRole(['admin']);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortOption, setSortOption] = useState('name_asc');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<InventoryItem | undefined>(undefined);
 
     // New Group Edit Modal State
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<ProductGroup | undefined>(undefined);
+    
+    const [groups, setGroups] = useState<ProductGroup[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Filter logic
-    const filteredGroups = useMemo(() => {
-        if (!searchTerm) return MOCK_GROUPS;
-        const lowerTerm = searchTerm.toLowerCase();
+    React.useEffect(() => {
+        fetchInventory();
+    }, []);
 
-        // Filter groups where name matches matches OR any variant type matches
-        return MOCK_GROUPS.filter(g =>
-            g.name.toLowerCase().includes(lowerTerm) ||
-            g.variants.some(v => (v.type || '').toLowerCase().includes(lowerTerm))
-        );
-    }, [searchTerm]);
+    const fetchInventory = async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('me_item_types')
+                .select(`
+                    id,
+                    name,
+                    quantity,
+                    unit,
+                    item_id,
+                    me_items (
+                        id,
+                        name
+                    )
+                `);
+                
+            if (error) throw error;
+            
+            if (!data || data.length === 0) {
+                setGroups([]);
+                return;
+            }
+            
+            // Group by item_name
+            const groupedMap = new Map<string, InventoryItem[]>();
+            data.forEach((row: any) => {
+                // Ensure the join worked and we have an item name
+                if (!row.me_items || Array.isArray(row.me_items)) return; 
+                
+                const itemName = row.me_items.name;
+                const invItem: InventoryItem = {
+                    id: row.id,
+                    item_id: row.item_id,
+                    item: itemName,
+                    type: row.name, // The variant name in the new schema
+                    unit: row.unit, // Pass unit for dynamic display
+                    quantity: row.quantity
+                };
+                
+                if (!groupedMap.has(itemName)) {
+                    groupedMap.set(itemName, []);
+                }
+                groupedMap.get(itemName)!.push(invItem);
+            });
+            
+            const fetchedGroups: ProductGroup[] = Array.from(groupedMap.entries()).map(([name, variants]) => ({
+                name,
+                variants
+            }));
+            
+            setGroups(fetchedGroups);
+        } catch (error: any) {
+            console.error("Error fetching inventory:", error?.message || error, error?.code, error?.details);
+            setGroups([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Filter and Sort logic
+    const sortedAndFilteredGroups = useMemo(() => {
+        let result = groups;
+        
+        if (searchTerm) {
+            const lowerTerm = searchTerm.toLowerCase();
+            result = result.filter(g =>
+                g.name.toLowerCase().includes(lowerTerm) ||
+                g.variants.some(v => (v.type || '').toLowerCase().includes(lowerTerm))
+            );
+        }
+
+        return [...result].sort((a, b) => {
+            const qtyA = a.variants.reduce((acc, v) => acc + v.quantity, 0);
+            const qtyB = b.variants.reduce((acc, v) => acc + v.quantity, 0);
+
+            switch (sortOption) {
+                case 'name_asc':
+                    return a.name.localeCompare(b.name);
+                case 'name_desc':
+                    return b.name.localeCompare(a.name);
+                case 'qty_asc':
+                    return qtyA - qtyB;
+                case 'qty_desc':
+                    return qtyB - qtyA;
+                default:
+                    return 0;
+            }
+        });
+    }, [searchTerm, groups, sortOption]);
 
     const handleAddProduct = () => {
         setEditingItem(undefined); // Ensure no item is pre-filled for "Add"
@@ -261,36 +275,57 @@ export default function InventoryTable() {
         <div className="space-y-6">
             {/* Toolbar */}
             <div className="flex flex-col lg:flex-row justify-between gap-4 p-4 rounded-xl bg-surface backdrop-blur-md border border-border shadow-sm">
-                <div className="relative w-full lg:w-96 group">
-                    <Input
-                        placeholder="Search items, types..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-black/20 border-white/5 focus:border-primary/50 transition-all font-sans"
-                    />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
+                <div className="flex flex-col md:flex-row gap-3 w-full lg:w-auto flex-1">
+                    <div className="relative w-full md:w-80 group">
+                        <Input
+                            placeholder="Search items, types..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 bg-black/20 border-white/5 focus:border-primary/50 transition-all font-sans"
+                        />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
+                    </div>
+                    <div className="w-full md:w-48 z-10">
+                        <Select
+                            value={sortOption}
+                            onChange={(val) => setSortOption(val)}
+                            options={[
+                                { value: 'name_asc', label: 'Alphabetical (A-Z)' },
+                                { value: 'name_desc', label: 'Alphabetical (Z-A)' },
+                                { value: 'qty_asc', label: 'Quantity (Low - High)' },
+                                { value: 'qty_desc', label: 'Quantity (High - Low)' },
+                            ]}
+                        />
+                    </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 mt-2 lg:mt-0">
                     <Button variant="secondary" icon={Download} size="sm">Export Report</Button>
                     {canEdit && <Button variant="primary" icon={Plus} size="sm" className="shadow-lg shadow-primary/20" onClick={handleAddProduct}>Add Item</Button>}
                 </div>
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredGroups.map(group => (
-                    <InventoryCard
-                        key={group.name}
-                        group={group}
-                        canEdit={canEdit}
-                        onEdit={handleEditGroup}
-                    />
-                ))}
-            </div>
+            {isLoading ? (
+                <div className="flex justify-center items-center py-20 text-gray-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mr-3"></div>
+                    Loading inventory...
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {sortedAndFilteredGroups.map(group => (
+                        <InventoryCard
+                            key={group.name}
+                            group={group}
+                            canEdit={canEdit}
+                            onEdit={handleEditGroup}
+                        />
+                    ))}
+                </div>
+            )}
 
             {/* Empty State */}
-            {filteredGroups.length === 0 && (
+            {!isLoading && sortedAndFilteredGroups.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-white/5 bg-surface/50">
                     <div className="bg-white/5 p-4 rounded-full mb-4">
                         <Search size={32} className="text-gray-500" />
@@ -307,7 +342,7 @@ export default function InventoryTable() {
                 onClose={() => setIsAddModalOpen(false)}
                 onSubmit={handleModalSubmit}
                 initialData={editingItem}
-                groups={MOCK_GROUPS}
+                groups={groups}
             />
 
             <GroupEditModal

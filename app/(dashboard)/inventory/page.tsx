@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function InventoryPage() {
     const { checkRole } = useAuth();
-    const canAdd = checkRole(['admin', 'manager']);
+    const canAdd = checkRole(['admin']);
 
     return (
         <div className="container mx-auto">

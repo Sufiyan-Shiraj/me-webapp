@@ -109,13 +109,60 @@
   border-color: var(--border);
 }
 
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply bg-white/[0.03] backdrop-blur-xl border border-white/10;
+}
+
+.glass-card {
+  @apply bg-[#0A0A0B]/80 backdrop-blur-2xl border border-white/10 shadow-2xl;
+}
+
+/* Glowing Effects */
+.shadow-neon {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15), 0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+.shadow-neon-hover:hover {
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.3), 0 0 60px rgba(6, 182, 212, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Custom Input Styling */
+.input-premium {
+  @apply bg-black/40 border-white/5 transition-all duration-300 outline-none;
+}
+
+.input-premium:focus {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.1);
+}
+
 /* Hide number input spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
 input[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Transitions */
+.transition-luxury {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }

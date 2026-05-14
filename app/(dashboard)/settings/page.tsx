@@ -5,13 +5,54 @@ import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import LoginActivityTable from '@/components/settings/LoginActivityTable';
-import { Shield, Key, Smartphone, Check, User } from 'lucide-react';
+import RecentActivityTable from '@/components/settings/RecentActivityTable';
+import { Shield, Key, Smartphone, Check, User, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { updateUserPassword } from '@/app/actions/userActions';
 import clsx from 'clsx';
 
 export default function SettingsPage() {
     const { user } = useAuth();
+    const isStaff = user?.role === 'staff';
     const [mfaEnabled, setMfaEnabled] = useState(false);
+    
+    // Password states
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+    const handleUpdatePassword = async () => {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            setStatus({ type: 'error', message: 'Please fill in all password fields.' });
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setStatus({ type: 'error', message: 'New passwords do not match.' });
+            return;
+        }
+
+        setIsUpdating(true);
+        setStatus(null);
+
+        try {
+            const res = await updateUserPassword(user?.id || '', currentPassword, newPassword);
+            if (res.success) {
+                setStatus({ type: 'success', message: res.message });
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+            } else {
+                setStatus({ type: 'error', message: res.message });
+            }
+        } catch (err) {
+            setStatus({ type: 'error', message: 'An unexpected error occurred.' });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
 
     return (
         <div className="container mx-auto space-y-8 max-w-5xl">
@@ -32,7 +73,7 @@ export default function SettingsPage() {
                             {user?.name?.charAt(0) || <User size={40} />}
                         </div>
                         <h4 className="text-xl font-bold text-white">{user?.name}</h4>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
+                        <p className="text-sm text-gray-500">{user?.username}</p>
                         <span className="mt-3 text-[10px] font-bold tracking-widest uppercase bg-white/5 text-gray-300 px-3 py-1 rounded-full border border-white/5">
                             {user?.role}
                         </span>
@@ -42,75 +83,74 @@ export default function SettingsPage() {
                 {/* Security Settings */}
                 <div className="md:col-span-2 space-y-6">
 
-                    {/* Change Password */}
-                    <Card className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
-                        <CardHeader className="border-b border-white/5">
-                            <h3 className="font-semibold text-white flex items-center gap-2">
-                                <Key size={18} className="text-primary" /> Change Password
-                            </h3>
-                        </CardHeader>
-                        <CardBody className="space-y-4">
-                            <Input type="password" placeholder="Current Password" className="bg-black/20 border-white/10" />
-                            <div className="grid grid-cols-2 gap-4">
-                                <Input type="password" placeholder="New Password" className="bg-black/20 border-white/10" />
-                                <Input type="password" placeholder="Confirm Password" className="bg-black/20 border-white/10" />
-                            </div>
-                        </CardBody>
-                        <CardFooter className="flex justify-end border-t border-white/5 pt-4">
-                            <Button variant="secondary" size="sm">Update Password</Button>
-                        </CardFooter>
-                    </Card>
-
-                    {/* MFA */}
-                    <Card className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
-                        <CardHeader className="border-b border-white/5">
-                            <h3 className="font-semibold text-white flex items-center gap-2">
-                                <Shield size={18} className="text-accent" /> Two-Factor Authentication
-                            </h3>
-                        </CardHeader>
-                        <CardBody>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-white">Secure your account</p>
-                                    <p className="text-sm text-gray-400">
-                                        Add an extra layer of security by requiring a code from your phone.
-                                    </p>
+                    {!isStaff && (
+                        <Card className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
+                            <CardHeader className="border-b border-white/5">
+                                <h3 className="font-semibold text-white flex items-center gap-2">
+                                    <Key size={18} className="text-primary" /> Change Password
+                                </h3>
+                            </CardHeader>
+                            <CardBody className="space-y-4">
+                                {status && (
+                                    <div className={clsx(
+                                        "p-3 rounded-lg text-sm mb-2 border",
+                                        status.type === 'success' ? "bg-success/10 text-success border-success/20" : "bg-destructive/10 text-destructive border-destructive/20"
+                                    )}>
+                                        {status.message}
+                                    </div>
+                                )}
+                                <Input 
+                                    type="password" 
+                                    placeholder="Current Password" 
+                                    className="bg-black/20 border-white/10" 
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Input 
+                                        type="password" 
+                                        placeholder="New Password" 
+                                        className="bg-black/20 border-white/10" 
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                    />
+                                    <Input 
+                                        type="password" 
+                                        placeholder="Confirm Password" 
+                                        className="bg-black/20 border-white/10" 
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                    />
                                 </div>
-                                <button
-                                    onClick={() => setMfaEnabled(!mfaEnabled)}
-                                    className={clsx(
-                                        "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                                        mfaEnabled ? 'bg-primary shadow-[0_0_10px_rgba(6,182,212,0.5)]' : 'bg-gray-700'
-                                    )}
+                            </CardBody>
+                            <CardFooter className="flex justify-end border-t border-white/5 pt-4">
+                                <Button 
+                                    variant="secondary" 
+                                    size="sm" 
+                                    onClick={handleUpdatePassword}
+                                    disabled={isUpdating}
                                 >
-                                    <span className={clsx(
-                                        "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                                        mfaEnabled ? 'translate-x-5' : 'translate-x-0'
-                                    )} />
-                                </button>
-                            </div>
-                            {mfaEnabled && (
-                                <div className="mt-6 p-4 bg-black/40 border border-white/10 rounded-xl flex flex-col md:flex-row items-center md:items-start gap-6 animate-in fade-in slide-in-from-top-2">
-                                    <div className="p-2 bg-white rounded-lg">
-                                        <div className="w-24 h-24 bg-gray-900 grid place-items-center text-white text-[10px]">QR CODE</div>
-                                    </div>
-                                    <div className="flex-1 space-y-3">
-                                        <div>
-                                            <p className="text-sm font-medium text-white">Scan this QR Code</p>
-                                            <p className="text-xs text-gray-400">Use Google Authenticator or Authy App</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Input placeholder="123 456" className="w-32 bg-black/20 border-white/10 text-center tracking-widest" />
-                                            <Button size="sm">Verify</Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </CardBody>
-                    </Card>
+                                    {isUpdating ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin mr-2" />
+                                            Updating...
+                                        </>
+                                    ) : 'Update Password'}
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    )}
 
-                    {/* Login Activity */}
-                    <LoginActivityTable />
+                    {isStaff && (
+                        <Card className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass p-6 text-center">
+                            <Shield size={40} className="mx-auto text-gray-500 mb-4 opacity-20" />
+                            <h3 className="text-lg font-bold text-white mb-1">Security Restricted</h3>
+                            <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                                Account security settings are managed by system administrators. 
+                                Please contact your manager to update your credentials.
+                            </p>
+                        </Card>
+                    )}
 
                 </div>
             </div>

@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card';
-import { Lock, Mail, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, ShieldCheck, Eye, EyeOff, User } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginForm() {
@@ -86,12 +86,11 @@ export default function LoginForm() {
 
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-primary transition-colors">
-                            <Mail size={18} />
+                            <User size={18} />
                         </div>
                         <Input
                             id="username"
                             type="text"
-                            // label="Username"
                             placeholder="Enter username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}

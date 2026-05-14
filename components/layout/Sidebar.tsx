@@ -57,7 +57,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     <div className="flex-1 overflow-y-auto py-6 px-4">
                         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-3">Main Menu</div>
                         <nav className="space-y-1">
-                            {navItems.filter(item => item.name !== 'Analytics' || user?.role === 'admin').map((item) => (
+                            {navItems.filter(item => {
+                                if (item.name === 'Analytics' || item.name === 'Users') {
+                                    return user?.role === 'admin';
+                                }
+                                return true;
+                            }).map((item) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
