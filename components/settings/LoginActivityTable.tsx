@@ -80,17 +80,16 @@ export default function LoginActivityTable() {
 
     return (
         <div className="space-y-6">
-            {/* Header and Filters - Glassmorphic Card */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-surface backdrop-blur-md border border-border shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-white border border-border shadow-sm">
                 <h3 className="text-lg font-semibold text-foreground">Recent Login Activity</h3>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => setStatusFilter('all')}
                         className={clsx(
-                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all border',
                             statusFilter === 'all'
-                                ? 'bg-primary text-white shadow-glow'
-                                : 'bg-black/20 text-gray-400 hover:text-white hover:bg-white/10'
+                                ? 'bg-accent text-white border-accent shadow-sm'
+                                : 'bg-gray-50 text-gray-600 border-border hover:bg-gray-100 hover:text-foreground'
                         )}
                     >
                         All
@@ -98,10 +97,10 @@ export default function LoginActivityTable() {
                     <button
                         onClick={() => setStatusFilter('success')}
                         className={clsx(
-                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all border',
                             statusFilter === 'success'
-                                ? 'bg-success text-white shadow-glow-success'
-                                : 'bg-black/20 text-gray-400 hover:text-white hover:bg-white/10'
+                                ? 'bg-success text-white border-success shadow-sm'
+                                : 'bg-gray-50 text-gray-600 border-border hover:bg-gray-100 hover:text-foreground'
                         )}
                     >
                         Success
@@ -109,10 +108,10 @@ export default function LoginActivityTable() {
                     <button
                         onClick={() => setStatusFilter('failed')}
                         className={clsx(
-                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all border',
                             statusFilter === 'failed'
-                                ? 'bg-destructive text-white shadow-glow-error'
-                                : 'bg-black/20 text-gray-400 hover:text-white hover:bg-white/10'
+                                ? 'bg-destructive text-white border-destructive shadow-sm'
+                                : 'bg-gray-50 text-gray-600 border-border hover:bg-gray-100 hover:text-foreground'
                         )}
                     >
                         Failed
@@ -120,10 +119,10 @@ export default function LoginActivityTable() {
                     <button
                         onClick={() => setStatusFilter('suspicious')}
                         className={clsx(
-                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
+                            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all border',
                             statusFilter === 'suspicious'
-                                ? 'bg-warning text-white shadow-glow-warning'
-                                : 'bg-black/20 text-gray-400 hover:text-white hover:bg-white/10'
+                                ? 'bg-warning text-white border-warning shadow-sm'
+                                : 'bg-gray-50 text-gray-600 border-border hover:bg-gray-100 hover:text-foreground'
                         )}
                     >
                         Suspicious
@@ -131,10 +130,9 @@ export default function LoginActivityTable() {
                 </div>
             </div>
 
-            {/* Table */}
             <div className="relative">
-                <Table className="relative">
-                    <TableHeader className="sticky top-0 z-10">
+                <Table className="relative bg-white border border-border rounded-lg shadow-sm overflow-hidden">
+                    <TableHeader className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur-sm">
                         <TableRow>
                             <TableHead>Device</TableHead>
                             <TableHead
@@ -166,26 +164,27 @@ export default function LoginActivityTable() {
                             <TableRow
                                 key={log.id}
                                 className={clsx(
-                                    log.is_suspicious && 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.3)] bg-warning/5',
-                                    styles['animate-slide-up']
+                                    log.is_suspicious && 'bg-warning-bg/50 hover:bg-warning-bg',
+                                    styles['animate-slide-up'],
+                                    "hover:bg-gray-50 transition-colors"
                                 )}
                                 style={{ animationDelay: `${index * 50}ms` }}
                             >
                                 <TableCell>
                                     <div className="flex items-center gap-2">
                                         {log.device.toLowerCase().includes('phone') ? (
-                                            <Smartphone size={16} className="text-gray-500" />
+                                            <Smartphone size={16} className="text-gray-400" />
                                         ) : (
-                                            <Monitor size={16} className="text-gray-500" />
+                                            <Monitor size={16} className="text-gray-400" />
                                         )}
-                                        <span className="text-sm font-medium">{log.device}</span>
+                                        <span className="text-sm font-semibold text-foreground">{log.device}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-gray-400">{log.location}</TableCell>
-                                <TableCell className="font-mono text-xs text-gray-500">
+                                <TableCell className="text-gray-600 font-medium text-sm">{log.location}</TableCell>
+                                <TableCell className="font-mono text-xs text-gray-500 font-medium">
                                     {log.ip_address}
                                 </TableCell>
-                                <TableCell className="text-gray-400">{log.timestamp}</TableCell>
+                                <TableCell className="text-gray-500 font-medium text-sm">{log.timestamp}</TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
                                         <span
@@ -210,9 +209,8 @@ export default function LoginActivityTable() {
                 </Table>
             </div>
 
-            {/* Pagination */}
             {sortedData.length > 0 && (
-                <div className="rounded-xl border border-border overflow-hidden shadow-sm">
+                <div className="rounded-xl border border-border overflow-hidden shadow-sm bg-white">
                     <TablePagination
                         currentPage={currentPage}
                         totalPages={totalPages}

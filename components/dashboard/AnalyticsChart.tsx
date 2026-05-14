@@ -15,10 +15,10 @@ export default function AnalyticsChart({ title, type, data }: ChartProps) {
     const total = data.reduce((acc, curr) => acc + curr.value, 0);
 
     return (
-        <Card className="h-full bg-surface backdrop-blur-xl border border-white/5 shadow-glass overflow-hidden">
-            <CardHeader className="border-b border-white/5">
-                <h3 className="text-sm font-semibold tracking-tight text-white uppercase flex items-center gap-2">
-                    {type === 'pie' ? <PieChart size={16} className="text-primary" /> : <BarChart2 size={16} className="text-accent" />}
+        <Card className="h-full bg-white border border-gray-100 shadow-sm overflow-hidden">
+            <CardHeader className="border-b border-gray-100">
+                <h3 className="text-sm font-semibold tracking-tight text-foreground uppercase flex items-center gap-2">
+                    {type === 'pie' ? <PieChart size={16} className="text-gray-900" /> : <BarChart2 size={16} className="text-gray-900" />}
                     {title}
                 </h3>
             </CardHeader>
@@ -28,13 +28,6 @@ export default function AnalyticsChart({ title, type, data }: ChartProps) {
                         {/* SVG Pie Chart */}
                         <div className="relative w-48 h-48 group">
                             <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                                {data.map((item, index) => {
-                                    // Calculate stroke-dasharray for svg circle
-                                    // Circumference = 2 * pi * r. Let r=16 (approx for stroke-width 32). C approx 100.
-                                    // Better: use simple conic-gradient CSS? No, SVG segments are better for generic support.
-                                    // Let's use simple CSS Conic Gradient for the "Pie"
-                                    return null;
-                                })}
                                 {/* Fallback to CSS Conic Gradient for simplicity and performance */}
                                 <foreignObject width="100" height="100">
                                     <div
@@ -54,7 +47,7 @@ export default function AnalyticsChart({ title, type, data }: ChartProps) {
                             </svg>
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span className="text-xs text-gray-500 uppercase tracking-widest">Total</span>
-                                <span className="text-xl font-bold text-white">{total}</span>
+                                <span className="text-xl font-bold text-foreground">{total}</span>
                             </div>
                         </div>
 
@@ -63,10 +56,10 @@ export default function AnalyticsChart({ title, type, data }: ChartProps) {
                             {data.map((item) => (
                                 <div key={item.label} className="flex items-center justify-between group cursor-default">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: item.color, color: item.color }} />
-                                        <span className="text-sm text-gray-300 group-hover:text-white transition-colors">{item.label}</span>
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                        <span className="text-sm text-gray-600 group-hover:text-foreground transition-colors font-medium">{item.label}</span>
                                     </div>
-                                    <span className="text-sm font-mono text-gray-400">{Math.round((item.value / total) * 100)}%</span>
+                                    <span className="text-sm font-mono text-gray-500 font-medium">{Math.round((item.value / total) * 100)}%</span>
                                 </div>
                             ))}
                         </div>
@@ -78,21 +71,20 @@ export default function AnalyticsChart({ title, type, data }: ChartProps) {
                             const height = (item.value / Math.max(...data.map(d => d.value))) * 100;
                             return (
                                 <div key={item.label} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                                    <div className="w-full relative flex-1 flex items-end rounded-t-lg bg-white/5 overflow-hidden group-hover:bg-white/10 transition-colors">
+                                    <div className="w-full relative flex-1 flex items-end rounded-t-lg bg-gray-100 overflow-hidden group-hover:bg-gray-200 transition-colors">
                                         <div
-                                            className="w-full relative transition-all duration-1000 ease-out rounded-t-lg group-hover:shadow-[0_0_20px_currentColor] group-hover:brightness-125"
+                                            className="w-full relative transition-all duration-300 ease-out rounded-t-lg group-hover:brightness-110"
                                             style={{
                                                 height: `${height}%`,
                                                 backgroundColor: item.color,
-                                                color: item.color
                                             }}
                                         >
-                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] py-1 px-2 rounded border border-white/10 transition-opacity whitespace-nowrap z-10">
+                                            <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] py-1 px-2 rounded border border-gray-700 transition-opacity whitespace-nowrap z-10 shadow-sm">
                                                 {item.value.toLocaleString()}
                                             </div>
                                         </div>
                                     </div>
-                                    <span className="text-[10px] text-gray-400 rotate-0 truncate max-w-full text-center group-hover:text-primary transition-colors">
+                                    <span className="text-[10px] text-gray-500 font-medium rotate-0 truncate max-w-full text-center group-hover:text-foreground transition-colors">
                                         {item.label}
                                     </span>
                                 </div>

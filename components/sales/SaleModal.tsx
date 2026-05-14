@@ -24,17 +24,16 @@ interface SaleItemRow {
 
 export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
     const [isNewCustomer, setIsNewCustomer] = useState(false);
-    const [customerInput, setCustomerInput] = useState(''); // ID if existing, Name if new
+    const [customerInput, setCustomerInput] = useState(''); 
     const [customers, setCustomers] = useState<Customer[]>([]);
     
-    const [inventory, setInventory] = useState<any[]>([]); // Grouped items and types
+    const [inventory, setInventory] = useState<any[]>([]);
     const [rows, setRows] = useState<SaleItemRow[]>([{ id: '1', itemTypeId: '', quantity: 0 }]);
     const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
             fetchData();
-            // Reset state
             setIsNewCustomer(false);
             setCustomerInput('');
             setRows([{ id: Math.random().toString(), itemTypeId: '', quantity: 0 }]);
@@ -44,11 +43,9 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
     const fetchData = async () => {
         setIsFetching(true);
         try {
-            // Fetch Customers
             const { data: custData } = await supabase.from('customers').select('*').order('name');
             if (custData) setCustomers(custData);
 
-            // Fetch Items and Types
             const { data: invData } = await supabase
                 .from('me_item_types')
                 .select(`
@@ -60,7 +57,6 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                 .order('name');
             
             if (invData) {
-                // Group by Item Name for easier selection
                 const grouped = new Map();
                 invData.forEach((row: any) => {
                     const itemName = row.me_items?.name || 'Unknown';
@@ -112,7 +108,6 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
 
         let finalCustomerId = customerInput;
 
-        // If new customer, insert them first
         if (isNewCustomer) {
             const { data, error } = await supabase
                 .from('customers')
@@ -128,7 +123,6 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
             finalCustomerId = data.id;
         }
 
-        // Get Next Sale ID
         let nextSaleId = 1000;
         const { data: maxSale } = await supabase
             .from('me_sales')
@@ -141,13 +135,12 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
             nextSaleId = Number(maxSale.sale_id) + 1;
         }
 
-        // Insert Sales Rows
         const insertPayload = validRows.map(row => ({
             sale_id: nextSaleId,
             customer_id: finalCustomerId,
             item_type_id: row.itemTypeId,
             quantity: row.quantity,
-            pending: row.quantity, // Initially all pending
+            pending: row.quantity,
             done: false
         }));
 
@@ -158,7 +151,7 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
             return;
         }
 
-        onSubmit({}); // Tell parent to refresh
+        onSubmit({});
         onClose();
     };
 
@@ -176,34 +169,36 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
             }
         >
             {isFetching ? (
-                <div className="flex justify-center py-10"><div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div></div>
+                <div className="flex justify-center py-10">
+                    <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
+                </div>
             ) : (
-                <form onSubmit={handleSubmit} className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     
                     {/* Customer Selection */}
-                    <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <User size={14} /> Customer Information
+                            <User size={16} /> Customer Information
                         </label>
 
-                        <div className="flex bg-black/20 p-1 rounded-lg border border-white/5 mb-2">
+                        <div className="flex bg-gray-100/50 p-1 rounded-xl border border-gray-100 mb-2">
                             <button
                                 type="button"
                                 onClick={() => { setIsNewCustomer(false); setCustomerInput(''); }}
-                                className={clsx("flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2",
-                                    !isNewCustomer ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-white"
+                                className={clsx("flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
+                                    !isNewCustomer ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
                                 )}
                             >
-                                <User size={14} /> Existing
+                                <User size={16} /> Existing
                             </button>
                             <button
                                 type="button"
                                 onClick={() => { setIsNewCustomer(true); setCustomerInput(''); }}
-                                className={clsx("flex-1 py-1.5 text-xs font-bold rounded-md transition-all flex items-center justify-center gap-2",
-                                    isNewCustomer ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-white"
+                                className={clsx("flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
+                                    isNewCustomer ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
                                 )}
                             >
-                                <UserPlus size={14} /> New Customer
+                                <UserPlus size={16} /> New Customer
                             </button>
                         </div>
 
@@ -227,22 +222,24 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
 
                     {/* Items Section */}
                     <div className="space-y-3">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between px-1">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                                <Layers size={14} /> Sale Items
+                                <Layers size={16} /> Sale Items
                             </label>
-                            <button
+                            <Button
                                 type="button"
+                                variant="ghost"
+                                size="sm"
                                 onClick={handleAddRow}
-                                className="text-xs text-primary hover:text-primary-300 font-bold flex items-center gap-1"
+                                className="text-xs font-bold text-gray-900 hover:text-black hover:bg-gray-100 px-2 h-8"
                             >
-                                <Plus size={12} /> Add Item
-                            </button>
+                                <Plus size={14} className="mr-1" /> Add Item
+                            </Button>
                         </div>
 
                         <div className="space-y-2">
                             {rows.map((row, index) => (
-                                <div key={row.id} className="flex items-end gap-2 bg-white/5 p-2 rounded-lg border border-white/5">
+                                <div key={row.id} className="flex items-end gap-2 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
                                     <div className="flex-1 space-y-1">
                                         {index === 0 && <label className="text-[10px] uppercase font-bold text-gray-500">Product & Variant</label>}
                                         <Select
@@ -255,7 +252,6 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                                             value={row.itemTypeId}
                                             onChange={(val) => updateRow(row.id, 'itemTypeId', val)}
                                             placeholder="Select Item..."
-                                            className="text-xs"
                                         />
                                     </div>
                                     <div className="w-24 space-y-1">
@@ -266,18 +262,20 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                                             min="1"
                                             value={row.quantity || ''}
                                             onChange={(e) => updateRow(row.id, 'quantity', parseInt(e.target.value) || 0)}
-                                            className="h-[30px] text-right font-mono text-xs"
+                                            className="text-right font-mono"
                                             required
                                         />
                                     </div>
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="ghost"
                                         onClick={() => handleRemoveRow(row.id)}
                                         disabled={rows.length === 1}
-                                        className="h-[30px] px-2 text-gray-500 hover:text-destructive disabled:opacity-30 transition-colors"
+                                        className="px-2 text-gray-400 hover:text-destructive hover:bg-destructive-bg disabled:opacity-30"
+                                        title="Remove item"
                                     >
-                                        <Trash2 size={16} />
-                                    </button>
+                                        <Trash2 size={18} />
+                                    </Button>
                                 </div>
                             ))}
                         </div>

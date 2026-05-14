@@ -24,7 +24,7 @@ export default function DashboardActions() {
 
     return (
         <>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
                 <Button variant="secondary" size="sm" icon={Plus} onClick={() => setIsProductModalOpen(true)}>Add Product</Button>
                 <Button variant="primary" size="sm" icon={Plus} onClick={() => setIsSaleModalOpen(true)}>New Sale</Button>
             </div>

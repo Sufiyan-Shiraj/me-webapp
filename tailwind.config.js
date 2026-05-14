@@ -1,29 +1,43 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
-        surface: {
-          DEFAULT: 'var(--surface)',
-          highlight: 'var(--surface-highlight)',
+        surface: 'var(--surface)',
+        border: 'var(--border)',
+        primary: 'var(--primary)',
+        accent: 'var(--accent)',
+        success: {
+          DEFAULT: 'var(--success)',
+          bg: 'var(--success-bg)',
+          border: 'var(--success-border)',
         },
-        primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
+        warning: {
+          DEFAULT: 'var(--warning)',
+          bg: 'var(--warning-bg)',
+          border: 'var(--warning-border)',
         },
-        accent: {
-          DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)',
+        destructive: {
+          DEFAULT: 'var(--destructive)',
+          bg: 'var(--destructive-bg)',
+          border: 'var(--destructive-border)',
         },
+        info: {
+          DEFAULT: 'var(--info)',
+          bg: 'var(--info-bg)',
+          border: 'var(--info-border)',
+        },
+        white: 'var(--white)',
+        black: 'var(--black)',
         gray: {
-          25: 'var(--gray-25)',
           50: 'var(--gray-50)',
           100: 'var(--gray-100)',
           200: 'var(--gray-200)',
@@ -35,29 +49,15 @@ module.exports = {
           800: 'var(--gray-800)',
           900: 'var(--gray-900)',
         },
-        success: 'var(--success)',
-        warning: 'var(--warning)',
-        destructive: 'var(--destructive)',
-        info: 'var(--info)',
-        border: 'var(--border)',
-        input: 'var(--input)',
-        ring: 'var(--ring)',
       },
       borderRadius: {
-        DEFAULT: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
         lg: 'var(--radius)',
-        xl: 'calc(var(--radius) + 4px)',
-        '2xl': 'calc(var(--radius) + 8px)',
-        full: '9999px',
-      },
-      fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Segoe UI', 'Roboto', 'sans-serif'],
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       boxShadow: {
-        'glow': '0 0 20px -5px var(--primary)',
-        'glow-accent': '0 0 20px -5px var(--accent)',
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.36)',
+        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+        'float': '0 10px 30px -5px rgba(0, 0, 0, 0.08)',
       }
     },
   },

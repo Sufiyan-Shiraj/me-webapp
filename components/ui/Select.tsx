@@ -54,33 +54,34 @@ export function Select({ options, value, onChange, className, placeholder = "Sel
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={clsx(
-                    "w-full flex items-center justify-between px-3 py-1.5 rounded-lg border transition-all duration-200 text-sm",
-                    "bg-black/20 border-white/10 hover:bg-white/5 hover:border-white/20",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                    isOpen && "border-primary/50 shadow-lg bg-black/40"
+                    "w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all duration-200 text-sm",
+                    "bg-gray-50 border-gray-200 hover:border-gray-300 hover:bg-gray-100 text-gray-900",
+                    "focus:outline-none focus:ring-2 focus:ring-gray-900/20",
+                    isOpen && "border-gray-900 ring-2 ring-gray-900/20 bg-white shadow-sm",
+                    className
                 )}
             >
-                <span className={clsx("truncate", !selectedOption && "text-gray-500")}>
+                <span className={clsx("truncate font-medium", !selectedOption && "text-gray-500 font-normal")}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
-                <ChevronDown size={14} className={clsx("ml-2 text-gray-500 transition-transform duration-200", isOpen && "rotate-180 text-primary")} />
+                <ChevronDown size={16} className={clsx("ml-2 text-gray-500 transition-transform duration-200", isOpen && "rotate-180 text-gray-900")} />
             </button>
 
             {/* Dropdown Menu */}
             <div className={clsx(
-                "absolute z-[999] w-full mt-2 overflow-hidden p-1.5 rounded-xl bg-black border border-white/20 shadow-2xl origin-top transition-all duration-300 ease-out flex flex-col",
+                "absolute z-[999] w-full mt-2 overflow-hidden p-1.5 rounded-2xl bg-white border border-gray-100 shadow-xl origin-top transition-all duration-200 ease-out flex flex-col",
                 isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
             )}>
                 {/* Search Bar */}
                 <div className="relative mb-1.5 p-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                     <input
                         ref={searchInputRef}
                         type="text"
                         placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-all"
+                        className="w-full bg-gray-50 border-transparent rounded-xl pl-8 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:outline-none focus:border-gray-200 focus:ring-1 focus:ring-gray-200 transition-all"
                     />
                 </div>
 
@@ -94,18 +95,18 @@ export function Select({ options, value, onChange, className, placeholder = "Sel
                                     setIsOpen(false);
                                 }}
                                 className={clsx(
-                                    "w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors text-left mb-0.5 last:mb-0",
+                                    "w-full flex items-center justify-between px-3 py-2.5 text-sm rounded-xl transition-colors text-left mb-0.5 last:mb-0",
                                     option.value === value
-                                        ? "bg-primary/20 text-primary font-medium"
-                                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                                        ? "bg-gray-900 text-white font-medium"
+                                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                 )}
                             >
                                 <span className="truncate">{option.label}</span>
-                                {option.value === value && <Check size={12} />}
+                                {option.value === value && <Check size={14} />}
                             </button>
                         ))
                     ) : (
-                        <div className="px-3 py-4 text-center text-xs text-gray-500 italic">
+                        <div className="px-3 py-4 text-center text-sm text-gray-500 italic">
                             No results found
                         </div>
                     )}

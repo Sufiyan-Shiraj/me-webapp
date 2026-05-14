@@ -31,51 +31,50 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
     };
 
     const getColorClass = (type: string, status?: string) => {
-        if (status === 'failed') return 'text-destructive bg-destructive/10';
+        if (status === 'failed') return 'text-destructive bg-destructive-bg border border-destructive-border';
         switch (type) {
-            case 'auth': return 'text-accent bg-accent/10';
-            case 'sale': return 'text-primary bg-primary/10';
-            case 'inventory': return 'text-warning bg-warning/10';
-            case 'user': return 'text-info bg-info/10';
-            default: return 'text-gray-400 bg-gray-400/10';
+            case 'auth': return 'text-accent bg-accent/10 border border-accent/20';
+            case 'sale': return 'text-primary bg-primary/10 border border-primary/20';
+            case 'inventory': return 'text-warning bg-warning-bg border border-warning-border';
+            case 'user': return 'text-info bg-info-bg border border-info-border';
+            default: return 'text-gray-500 bg-gray-50 border border-gray-200';
         }
     };
 
     return (
-        <Card className="h-full bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
-            <CardHeader className="border-b border-white/5">
-                <h3 className="text-sm font-semibold tracking-tight text-white uppercase flex items-center gap-2">
-                    <Activity size={16} className="text-primary" /> Recent Activity
-                </h3>
-            </CardHeader>
-            <CardBody className="p-0">
-                <div className="divide-y divide-white/5">
-                    {activities.length > 0 ? (
-                        activities.map((item) => (
-                            <div key={item.id} className="p-4 flex items-start gap-3 hover:bg-white/[0.02] transition-colors">
-                                <div className={`mt-0.5 p-2 rounded-lg ${getColorClass(item.type, item.status)}`}>
-                                    {getIcon(item.type)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2 mb-0.5">
-                                        <p className="text-sm font-semibold text-white truncate">
-                                            {item.user} <span className="text-gray-400 font-normal">{item.action.toLowerCase()}</span>
-                                        </p>
-                                        <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                                            {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-400 truncate">{item.details}</p>
-                                </div>
+        <div className="h-full">
+            <div className="flex flex-col mb-4">
+                <h3 className="text-sm font-semibold tracking-tight text-gray-900 uppercase">Recent Activity</h3>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium mt-0.5">
+                    Live Updates
+                </p>
+            </div>
+            <div className="space-y-4">
+                {activities.length > 0 ? (
+                    activities.slice(0, 5).map((item) => (
+                        <div key={item.id} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
+                            <div className={`p-1.5 rounded-md ${getColorClass(item.type, item.status)}`}>
+                                {getIcon(item.type)}
                             </div>
-                        ))
-                    ) : (
-                        <div className="p-8 text-center">
-                            <p className="text-sm text-gray-500">No recent activity found.</p>
+                            <div className="flex-1 min-w-0 pt-0.5">
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                        {item.user} <span className="text-gray-500 font-normal">{item.action.toLowerCase()}</span>
+                                    </p>
+                                    <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
+                                        {formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 truncate">{item.details}</p>
+                            </div>
                         </div>
-                    )}
-                </div>
-            </CardBody>
-        </Card>
+                    ))
+                ) : (
+                    <div className="py-4 text-center">
+                        <p className="text-sm text-gray-500">No recent activity found.</p>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

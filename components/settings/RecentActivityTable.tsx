@@ -38,8 +38,6 @@ export default function RecentActivityTable() {
         fetchActivity();
     }, []);
 
-    // ... (rest of the logic remains the same)
-
     // Filtering
     const filteredData = useMemo(() => {
         return activities.filter(log => {
@@ -89,11 +87,11 @@ export default function RecentActivityTable() {
     };
 
     const getTypeIcon = (type: string) => {
-        return <Shield size={16} className="text-primary" />;
+        return <Shield size={16} className="text-accent" />;
     };
 
     const getTypeColor = (type: string) => {
-        return 'bg-primary/10 text-primary border-primary/20';
+        return 'bg-accent/10 text-accent border-accent/20';
     };
 
     const formatTime = (ts: string) => {
@@ -111,11 +109,10 @@ export default function RecentActivityTable() {
 
     return (
         <div className="space-y-6">
-            {/* Header and Filters - Glassmorphic Card */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-surface backdrop-blur-md border border-border shadow-sm">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-xl bg-white border border-border shadow-sm">
                 <div className="flex items-center gap-3">
                     <div 
-                        className="p-2 rounded-lg bg-primary/20 text-primary cursor-pointer hover:bg-primary/30 transition-colors"
+                        className="p-2 rounded-lg bg-accent/10 text-accent cursor-pointer hover:bg-accent/20 transition-colors"
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         title={isCollapsed ? "Maximize" : "Minimize"}
                     >
@@ -132,10 +129,10 @@ export default function RecentActivityTable() {
                                 key={status}
                                 onClick={() => setStatusFilter(status)}
                                 className={clsx(
-                                    'px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize',
+                                    'px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize border',
                                     statusFilter === status
-                                        ? 'bg-primary text-white shadow-glow'
-                                        : 'bg-black/20 text-gray-400 hover:text-white hover:bg-white/10'
+                                        ? 'bg-accent text-white border-accent shadow-sm'
+                                        : 'bg-gray-50 text-gray-600 border-border hover:bg-gray-100 hover:text-foreground'
                                 )}
                             >
                                 {status}
@@ -154,10 +151,9 @@ export default function RecentActivityTable() {
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                     >
-                        {/* Table */}
                         <div className="relative">
-                            <Table className="relative">
-                                <TableHeader className="sticky top-0 z-10">
+                            <Table className="relative bg-white border border-border rounded-lg overflow-hidden shadow-sm">
+                                <TableHeader className="sticky top-0 z-10 bg-gray-50">
                                     <TableRow>
                                         <TableHead
                                             sortable
@@ -188,7 +184,7 @@ export default function RecentActivityTable() {
                                     {isLoading ? (
                                         <TableRow>
                                             <TableCell colSpan={5} className="text-center py-20 text-gray-500">
-                                                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto mb-3"></div>
+                                                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent mx-auto mb-3"></div>
                                                  Loading activity...
                                             </TableCell>
                                         </TableRow>
@@ -202,14 +198,14 @@ export default function RecentActivityTable() {
                                         paginatedData.map((log, index) => (
                                             <TableRow
                                                 key={log.id}
-                                                className={clsx(styles['animate-slide-up'])}
+                                                className={clsx(styles['animate-slide-up'], "hover:bg-gray-50 transition-colors cursor-pointer")}
                                                 style={{ animationDelay: `${index * 50}ms` }}
                                             >
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
                                                         {getTypeIcon(log.type)}
                                                         <span className={clsx(
-                                                            "text-xs px-2 py-0.5 rounded-full border uppercase tracking-wider font-semibold",
+                                                            "text-[10px] px-2.5 py-1 rounded-md border uppercase tracking-wider font-bold",
                                                             getTypeColor(log.type)
                                                         )}>
                                                             {log.type}
@@ -219,25 +215,25 @@ export default function RecentActivityTable() {
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
                                                         <span className={clsx(
-                                                            "font-medium",
+                                                            "font-semibold text-sm",
                                                             log.action.includes('Success') ? "text-success" : "text-destructive"
                                                         )}>
                                                             {log.action}
                                                         </span>
                                                         {(log as any).is_suspicious && (
-                                                            <span className="flex items-center gap-1 text-[10px] bg-warning/10 text-warning border border-warning/20 px-2 py-0.5 rounded-full uppercase font-bold animate-pulse">
+                                                            <span className="flex items-center gap-1 text-[10px] bg-destructive-bg text-destructive border border-destructive-border px-2 py-0.5 rounded-md uppercase font-bold animate-pulse">
                                                                 <Shield size={10} /> Suspicious
                                                             </span>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-gray-400">{log.details}</TableCell>
+                                                <TableCell className="text-gray-600 text-sm font-medium">{log.details}</TableCell>
                                                 <TableCell>
-                                                    <span className="flex items-center gap-2 text-sm text-gray-300">
-                                                        <User size={14} /> {log.user}
+                                                    <span className="flex items-center gap-2 text-sm text-foreground font-medium">
+                                                        <User size={14} className="text-gray-400" /> {log.user}
                                                     </span>
                                                 </TableCell>
-                                                <TableCell className="text-gray-400 text-sm whitespace-nowrap">{formatTime(log.timestamp)}</TableCell>
+                                                <TableCell className="text-gray-500 text-sm font-medium whitespace-nowrap">{formatTime(log.timestamp)}</TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -245,9 +241,8 @@ export default function RecentActivityTable() {
                             </Table>
                         </div>
 
-                        {/* Pagination */}
                         {sortedData.length > 0 && (
-                            <div className="mt-4 rounded-xl border border-border overflow-hidden shadow-sm">
+                            <div className="mt-4 rounded-xl border border-border overflow-hidden shadow-sm bg-white">
                                 <TablePagination
                                     currentPage={currentPage}
                                     totalPages={totalPages}

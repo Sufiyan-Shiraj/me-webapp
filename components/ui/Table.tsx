@@ -2,12 +2,11 @@ import React from 'react';
 import clsx from 'clsx';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 
-// Enhanced Table component with glassmorphic styling
 export function Table({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className="w-full overflow-hidden rounded-xl border border-border bg-surface backdrop-blur-xl shadow-glass">
+        <div className="w-full overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
             <div className="w-full overflow-x-auto">
-                <table className={clsx('w-full', className)}>
+                <table className={clsx('w-full text-sm', className)}>
                     {children}
                 </table>
             </div>
@@ -17,7 +16,7 @@ export function Table({ children, className }: { children: React.ReactNode; clas
 
 export function TableHeader({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <thead className={clsx('bg-black/20 border-b border-border backdrop-blur-sm', className)}>
+        <thead className={clsx('bg-gray-50 border-b border-gray-100', className)}>
             {children}
         </thead>
     );
@@ -25,7 +24,7 @@ export function TableHeader({ children, className }: { children: React.ReactNode
 
 export function TableBody({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <tbody className={clsx('divide-y divide-border', className)}>
+        <tbody className={clsx('divide-y divide-gray-100 bg-white', className)}>
             {children}
         </tbody>
     );
@@ -43,10 +42,10 @@ export function TableRow({ children, className, onClick, selected, style }: Tabl
     return (
         <tr
             className={clsx(
-                'transition-all duration-200',
-                'hover:bg-primary/5 hover:shadow-[inset_0_0_0_1px_rgba(6,182,212,0.1)]',
+                'transition-colors duration-200',
+                'hover:bg-gray-50',
                 onClick && 'cursor-pointer',
-                selected && 'bg-primary/10 shadow-[inset_0_0_0_1px_rgba(6,182,212,0.2)]',
+                selected && 'bg-info-bg',
                 className
             )}
             onClick={onClick}
@@ -69,8 +68,8 @@ export function TableHead({ children, className, sortable, sortDirection, onSort
     return (
         <th
             className={clsx(
-                'px-6 py-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider',
-                sortable && 'cursor-pointer select-none hover:text-primary transition-colors',
+                'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider',
+                sortable && 'cursor-pointer select-none hover:text-gray-900',
                 className
             )}
             onClick={sortable ? onSort : undefined}
@@ -98,7 +97,7 @@ export function TableHead({ children, className, sortable, sortDirection, onSort
 
 export function TableCell({ children, className, colSpan }: { children: React.ReactNode; className?: string; colSpan?: number }) {
     return (
-        <td className={clsx('px-6 py-4 text-sm text-foreground', className)} colSpan={colSpan}>
+        <td className={clsx('px-4 py-3 text-sm text-gray-900', className)} colSpan={colSpan}>
             {children}
         </td>
     );

@@ -17,37 +17,43 @@ export default async function DashboardPage() {
     const stats = await getDashboardStats();
     const activities = await getRecentActivity();
 
+
     return (
         <div className="space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-2">
                 <div>
-                    <h1 className="text-4xl font-sans font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent mb-2">
-                        Operational Dashboard
-                    </h1>
-                    <p className="text-gray-400">Real-time overview of business operations.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                    <p className="text-sm text-gray-500 mt-1">Here's what's happening with your store today.</p>
                 </div>
                 <DashboardActions />
             </div>
 
-            {/* Top Row: Quick Stats & Transaction Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
+                    <p className="text-gray-500 text-sm font-semibold tracking-wide uppercase mb-2">Total Sales</p>
+                    <h2 className="text-5xl font-bold tracking-tight text-gray-900">{stats.salesCount.toLocaleString()}</h2>
+                    <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-4">
+                        <span className="text-xs text-gray-500 font-medium">Updated just now</span>
+                        <span className="px-2 py-1 bg-success-bg text-success text-xs font-bold rounded-lg">+12%</span>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
                     <TransactionSummary 
                         transactionCount={stats.salesCount} 
                         customerCount={stats.customerCount}
                     />
                 </div>
-                <div>
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                     <InventoryStatus data={stats.inventory} />
                 </div>
             </div>
 
-            {/* Bottom Row: Activity Feed & Low Stock */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                     <RecentActivity activities={activities} />
                 </div>
-                <div className="space-y-6">
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                     <LowStockAlerts alerts={stats.inventory.lowStockItems} />
                 </div>
             </div>

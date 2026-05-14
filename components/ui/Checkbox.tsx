@@ -39,15 +39,15 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
                     />
                     {/* Custom Checkbox Design */}
                     <div className={clsx(
-                        "w-5 h-5 rounded-md border transition-all duration-200 flex items-center justify-center",
-                        "bg-white/5 border-white/10 group-hover:border-primary/50 shadow-sm",
-                        "peer-checked:bg-gradient-to-br peer-checked:from-primary peer-checked:to-accent peer-checked:border-transparent peer-checked:shadow-[0_0_10px_rgba(6,182,212,0.4)]",
-                        "peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50"
+                        "w-5 h-5 rounded-md border transition-all duration-200 flex items-center justify-center bg-white shadow-sm",
+                        "border-border group-hover:border-accent",
+                        "peer-checked:bg-accent peer-checked:border-accent peer-checked:text-white",
+                        "peer-focus-visible:ring-2 peer-focus-visible:ring-accent/50"
                     )}>
-                        <Check size={12} className={clsx("text-black stroke-[3px] transition-transform duration-200 scale-0", checked && "scale-100")} />
+                        <Check size={12} className={clsx("text-white stroke-[3px] transition-transform duration-200 scale-0", checked && "scale-100")} />
                     </div>
                 </div>
-                {label && <span className="text-sm text-gray-300 group-hover:text-white select-none">{label}</span>}
+                {label && <span className="text-sm text-gray-700 group-hover:text-foreground select-none font-medium">{label}</span>}
             </label>
         );
     }

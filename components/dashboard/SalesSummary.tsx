@@ -12,38 +12,41 @@ interface TransactionSummaryProps {
 
 export default function TransactionSummary({ transactionCount, customerCount }: TransactionSummaryProps) {
     return (
-        <Card className="h-full bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
-            <CardHeader className="border-b border-white/5">
-                <h3 className="text-sm font-semibold tracking-tight text-white uppercase">Operational Overview</h3>
-                <Button variant="ghost" size="sm" icon={Download}>Export</Button>
-            </CardHeader>
-            <CardBody>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Transactions Card */}
-                    <div className="p-5 rounded-xl border border-white/5 bg-black/20 backdrop-blur-sm group hover:border-primary/20 transition-all duration-300">
-                        <div className="flex items-center gap-2 text-gray-400 mb-3">
-                            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
-                                <ShoppingCart size={16} />
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-wider">Total Sales</span>
+        <div className="h-full">
+            <div className="flex flex-col mb-4">
+                <h3 className="text-sm font-semibold tracking-tight text-gray-900 uppercase">Billing & Transactions</h3>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium mt-0.5">
+                    Performing • 1h
+                </p>
+            </div>
+            
+            <div className="space-y-4">
+                {/* Transactions */}
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-md bg-gray-100 text-gray-700">
+                            <ShoppingCart size={14} />
                         </div>
-                        <div className="text-3xl font-bold tracking-tight text-white mb-1">{transactionCount.toLocaleString()}</div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">All Time Volume</p>
+                        <span className="text-sm font-semibold text-gray-900">Total Sales</span>
                     </div>
-
-                    {/* Customers Card */}
-                    <div className="p-5 rounded-xl border border-white/5 bg-black/20 backdrop-blur-sm group hover:border-accent/20 transition-all duration-300">
-                        <div className="flex items-center gap-2 text-gray-400 mb-3">
-                            <div className="p-1.5 rounded-lg bg-accent/10 text-accent">
-                                <Users size={16} />
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-wider">Active Customers</span>
-                        </div>
-                        <div className="text-3xl font-bold tracking-tight text-white mb-1">{customerCount.toLocaleString()}</div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">Registered Base</p>
+                    <div className="text-right">
+                        <div className="text-sm font-bold text-gray-900">{transactionCount.toLocaleString()}</div>
                     </div>
                 </div>
-            </CardBody>
-        </Card>
+
+                {/* Customers */}
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-md bg-info-bg text-info">
+                            <Users size={14} />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-900">Active Customers</span>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-sm font-bold text-gray-900">{customerCount.toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
 }

@@ -11,11 +11,11 @@ export default function InventoryPage() {
     const canAdd = checkRole(['admin']);
 
     return (
-        <div className="container mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-                    <p className="text-gray-500">Track stock levels and manage products.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+                    <p className="text-sm text-gray-500 mt-1">Manage and track your products and stock levels.</p>
                 </div>
             </div>
 

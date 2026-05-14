@@ -56,17 +56,17 @@ export function TablePagination({
     };
 
     return (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-transparent border-t border-white/5 backdrop-blur-sm">
-            <div className="text-sm text-gray-400">
-                Showing <span className="font-medium text-white">{startItem}</span> to{' '}
-                <span className="font-medium text-white">{endItem}</span> of{' '}
-                <span className="font-medium text-white">{totalItems}</span> results
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white rounded-b-3xl">
+            <div className="text-sm text-gray-500 font-medium">
+                Showing <span className="font-bold text-gray-900">{startItem}</span> to{' '}
+                <span className="font-bold text-gray-900">{endItem}</span> of{' '}
+                <span className="font-bold text-gray-900">{totalItems}</span> results
             </div>
 
             <div className="flex items-center gap-6">
                 {/* Items per page selector */}
                 <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-400">Per page:</span>
+                    <span className="text-sm text-gray-500 font-medium">Per page:</span>
                     <div className="w-20">
                         <Select
                             options={[
@@ -83,29 +83,27 @@ export function TablePagination({
 
                 {/* Page navigation */}
                 <div className="flex items-center gap-2">
-                    <Button
-                        size="sm"
-                        variant="ghost"
+                    <button
                         onClick={() => onPageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30"
+                        className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 transition-colors"
                     >
                         <ChevronLeft size={18} />
-                    </Button>
+                    </button>
 
                     <div className="hidden sm:flex items-center gap-1">
                         {getPageNumbers().map((page, index) => (
                             <React.Fragment key={index}>
                                 {page === '...' ? (
-                                    <span className="px-2 text-gray-500">…</span>
+                                    <span className="px-2 text-gray-400">…</span>
                                 ) : (
                                     <button
                                         onClick={() => onPageChange(page as number)}
                                         className={clsx(
-                                            'h-8 min-w-[32px] px-3 rounded-lg text-sm font-medium transition-all duration-200',
+                                            'h-8 min-w-[32px] px-3 rounded-lg text-sm font-semibold transition-all duration-200 border',
                                             page === currentPage
-                                                ? 'bg-primary/20 text-primary border border-primary/20 shadow-glow'
-                                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                                ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+                                                : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-100'
                                         )}
                                     >
                                         {page}
@@ -115,15 +113,13 @@ export function TablePagination({
                         ))}
                     </div>
 
-                    <Button
-                        size="sm"
-                        variant="ghost"
+                    <button
                         onClick={() => onPageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-white/10 disabled:opacity-30"
+                        className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 transition-colors"
                     >
                         <ChevronRight size={18} />
-                    </Button>
+                    </button>
                 </div>
             </div>
         </div>

@@ -96,38 +96,38 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-500">
-            <div className="relative w-full max-w-[400px] animate-in zoom-in-95 duration-500">
-                <Card className="glass-card overflow-hidden rounded-3xl border-white/10 shadow-neon">
-                    <CardHeader className="border-b border-white/5 flex flex-col items-center py-8 space-y-4">
-                        <div className="relative animate-float">
-                            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary via-primary/50 to-accent border-2 border-white/20 flex items-center justify-center text-black text-3xl font-black shadow-[0_0_30px_rgba(6,182,212,0.4)]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 animate-in fade-in duration-300">
+            <div className="relative w-full max-w-[400px] animate-in zoom-in-95 duration-300">
+                <Card className="bg-white overflow-hidden rounded-3xl border border-border shadow-xl">
+                    <CardHeader className="border-b border-border flex flex-col items-center py-8 space-y-4 bg-gray-50/50">
+                        <div className="relative">
+                            <div className="h-20 w-20 rounded-full bg-gray-100 border border-border flex items-center justify-center text-foreground text-3xl font-black shadow-sm">
                                 {user.username.charAt(0).toUpperCase()}
                             </div>
                             <div className={clsx(
-                                "absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-[#0F0F11] flex items-center justify-center shadow-lg",
-                                user.role === 'admin' ? "bg-primary" : "bg-gray-500"
+                                "absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-white flex items-center justify-center shadow-sm",
+                                user.role === 'admin' ? "bg-accent" : "bg-gray-400"
                             )}>
-                                {user.role === 'admin' ? <Shield size={12} className="text-black" /> : <User size={12} className="text-white" />}
+                                {user.role === 'admin' ? <Shield size={12} className="text-white" /> : <User size={12} className="text-white" />}
                             </div>
                         </div>
                         <div className="text-center">
-                            <h2 className="text-2xl font-black text-white leading-tight tracking-tight">{user.username}</h2>
-                            <p className="text-[10px] text-primary font-bold uppercase tracking-[0.3em] mt-1">{user.role} ACCESS</p>
+                            <h2 className="text-2xl font-black text-foreground leading-tight tracking-tight">{user.username}</h2>
+                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-1">{user.role} ACCESS</p>
                         </div>
                         <button 
                             onClick={onClose}
-                            className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full text-gray-500 hover:text-white transition-all duration-300"
+                            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-foreground transition-all duration-200"
                         >
                             <X size={20} />
                         </button>
                     </CardHeader>
 
-                    <CardBody className="py-6 px-8 space-y-8">
+                    <CardBody className="py-6 px-8 space-y-8 bg-white">
                         {status && (
                             <div className={clsx(
-                                "p-4 rounded-2xl text-[11px] font-medium border flex items-center gap-3 animate-in slide-in-from-top-2",
-                                status.type === 'success' ? "bg-success/10 text-success border-success/20" : "bg-destructive/10 text-destructive border-destructive/20"
+                                "p-4 rounded-xl text-xs font-semibold border flex items-center gap-3 animate-in slide-in-from-top-2",
+                                status.type === 'success' ? "bg-success-bg text-success border-success-border" : "bg-destructive-bg text-destructive border-destructive-border"
                             )}>
                                 {status.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
                                 {status.message}
@@ -136,8 +136,8 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
 
                         {/* Password Section */}
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <Lock size={12} className="text-primary" /> Security
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Lock size={12} className="text-accent" /> Security
                             </h3>
                             <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
@@ -148,11 +148,11 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                                 type={showPassword ? "text" : "password"} 
                                                 value={user.password} 
                                                 readOnly 
-                                                className="bg-black/60 border-white/5 h-10 rounded-xl text-white/80 text-xs font-mono tracking-widest px-4 shadow-none focus:ring-0"
+                                                className="bg-gray-50 border-border h-10 rounded-xl text-gray-600 text-xs font-mono tracking-widest px-4 shadow-none focus:ring-0"
                                             />
                                             <button 
                                                 onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-primary transition-colors"
+                                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
                                             >
                                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
@@ -164,7 +164,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                             placeholder="Update..." 
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
-                                            className="bg-black/60 border-white/5 h-10 rounded-xl text-xs px-4 shadow-none focus:border-primary/50 transition-all"
+                                            className="bg-white border-border h-10 rounded-xl text-xs px-4 shadow-sm focus:border-accent/50 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -172,7 +172,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                 {newPassword && (
                                     <div className="flex justify-center pt-2 animate-in slide-in-from-top-1">
                                         <button 
-                                            className="text-[9px] font-black text-gray-500 hover:text-primary transition-all duration-300 flex items-center justify-center gap-2 tracking-[0.2em] py-2 w-full"
+                                            className="text-[10px] font-bold text-gray-500 hover:text-accent transition-all duration-200 flex items-center justify-center gap-2 tracking-[0.1em] py-2 w-full"
                                             onClick={handleUpdatePassword}
                                             disabled={isLoading}
                                         >
@@ -187,7 +187,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
 
                         {/* Access Section */}
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                 <Shield size={12} className="text-accent" /> Permissions
                             </h3>
                             <div className="space-y-4">
@@ -200,7 +200,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                             { value: 'staff', label: 'Staff Member' },
                                             { value: 'admin', label: 'System Administrator' }
                                         ]}
-                                        className="input-premium h-11 rounded-xl text-xs border-white/5"
+                                        className="h-11 rounded-xl text-xs border-border bg-white"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -209,21 +209,21 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                         <button 
                                             onClick={() => setMeAccess(!meAccess)}
                                             className={clsx(
-                                                "flex items-center justify-between p-3.5 rounded-xl border transition-luxury",
-                                                meAccess ? "bg-primary/10 border-primary/30 text-white shadow-neon" : "bg-black/20 border-white/5 text-gray-600"
+                                                "flex items-center justify-between p-3.5 rounded-xl border transition-colors",
+                                                meAccess ? "bg-accent/10 border-accent/30 text-accent" : "bg-gray-50 border-border text-gray-500 hover:bg-gray-100"
                                             )}
                                         >
-                                            <span className="text-xs font-black">ME Ent.</span>
-                                            {meAccess && <Check size={14} className="text-primary" />}
+                                            <span className="text-xs font-bold">ME Ent.</span>
+                                            {meAccess && <Check size={14} className="text-accent" />}
                                         </button>
                                         <button 
                                             onClick={() => setMayfieldAccess(!mayfieldAccess)}
                                             className={clsx(
-                                                "flex items-center justify-between p-3.5 rounded-xl border transition-luxury",
-                                                mayfieldAccess ? "bg-accent/10 border-accent/30 text-white shadow-neon" : "bg-black/20 border-white/5 text-gray-600"
+                                                "flex items-center justify-between p-3.5 rounded-xl border transition-colors",
+                                                mayfieldAccess ? "bg-accent/10 border-accent/30 text-accent" : "bg-gray-50 border-border text-gray-500 hover:bg-gray-100"
                                             )}
                                         >
-                                            <span className="text-xs font-black">Mayfield</span>
+                                            <span className="text-xs font-bold">Mayfield</span>
                                             {mayfieldAccess && <Check size={14} className="text-accent" />}
                                         </button>
                                     </div>
@@ -232,36 +232,38 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                         </div>
                     </CardBody>
 
-                    <CardFooter className="bg-white/[0.02] p-8 flex flex-col gap-4">
+                    <CardFooter className="bg-gray-50 p-8 flex flex-col gap-4 border-t border-border">
                         <Button 
-                            className="bg-primary hover:bg-primary/90 text-black font-black h-14 rounded-2xl w-full shadow-neon-hover text-sm tracking-[0.1em] transition-luxury"
+                            className="w-full font-bold h-12 text-sm tracking-[0.05em]"
                             onClick={handleUpdateDetails}
                             disabled={isLoading}
                         >
-                            {isLoading ? <Loader2 size={20} className="animate-spin" /> : 'SAVE CHANGES'}
+                            {isLoading ? <Loader2 size={18} className="animate-spin" /> : 'SAVE CHANGES'}
                         </Button>
 
                         <div className="w-full">
                             {!showDeleteConfirm ? (
                                 <button 
-                                    className="text-[10px] font-black text-gray-600 hover:text-destructive w-full py-2 transition-all duration-300 flex items-center justify-center gap-2 tracking-[0.2em]"
+                                    className="text-[10px] font-bold text-gray-500 hover:text-destructive w-full py-2 transition-colors duration-200 flex items-center justify-center gap-2 tracking-[0.1em]"
                                     onClick={() => setShowDeleteConfirm(true)}
                                 >
                                     <Trash2 size={12} /> DELETE ACCOUNT
                                 </button>
                             ) : (
-                                <div className="flex flex-col items-center gap-3 animate-in zoom-in-95 bg-destructive/10 p-4 rounded-2xl border border-destructive/20">
-                                    <span className="text-[10px] text-destructive font-black uppercase tracking-widest">Delete?</span>
+                                <div className="flex flex-col items-center gap-3 animate-in zoom-in-95 bg-destructive-bg p-4 rounded-xl border border-destructive-border">
+                                    <span className="text-[10px] text-destructive font-bold uppercase tracking-widest">Delete?</span>
                                     <div className="flex gap-3 w-full">
                                         <Button 
-                                            className="flex-1 bg-destructive hover:bg-destructive/90 text-white font-bold rounded-xl h-10 text-[11px]"
+                                            variant="danger"
+                                            className="flex-1 font-bold rounded-lg h-9 text-[11px]"
                                             onClick={handleDelete}
                                             disabled={isDeleting}
                                         >
-                                            {isDeleting ? <Loader2 size={16} className="animate-spin" /> : 'YES'}
+                                            {isDeleting ? <Loader2 size={14} className="animate-spin" /> : 'YES'}
                                         </Button>
                                         <Button 
-                                            className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl h-10 text-[11px]"
+                                            variant="secondary"
+                                            className="flex-1 font-bold rounded-lg h-9 text-[11px] bg-white border-border text-gray-700 hover:bg-gray-50"
                                             onClick={() => setShowDeleteConfirm(false)}
                                         >
                                             NO

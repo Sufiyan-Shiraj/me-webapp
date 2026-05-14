@@ -18,60 +18,63 @@ interface LowStockAlertsProps {
 }
 
 export default function LowStockAlerts({ alerts }: LowStockAlertsProps) {
-    if (alerts.length === 0) {
-        return (
-            <Card className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
-                <CardBody className="p-8 text-center flex flex-col items-center gap-3">
-                    <div className="p-3 rounded-full bg-white/5 text-gray-500">
+    return (
+        <div className="h-full">
+            <div className="flex flex-col mb-4">
+                <div className="flex items-center justify-between w-full">
+                    <h3 className="text-sm font-semibold tracking-tight text-gray-900 uppercase">Stock Alerts</h3>
+                    <Link href="/inventory" className="text-[10px] font-bold text-gray-500 hover:text-gray-900 uppercase tracking-widest transition-colors">
+                        View All
+                    </Link>
+                </div>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium mt-0.5">
+                    Needs Attention
+                </p>
+            </div>
+
+            {alerts.length === 0 ? (
+                <div className="py-4 text-center flex flex-col items-center gap-3">
+                    <div className="p-3 rounded-full bg-gray-50 text-gray-400 border border-gray-100">
                         <Package size={24} />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-gray-300">No Inventory Alerts</p>
-                        <p className="text-xs text-gray-500 mt-1">All items are either well-stocked or your inventory is empty.</p>
+                        <p className="text-sm font-semibold text-gray-700">No Inventory Alerts</p>
+                        <p className="text-xs text-gray-500 mt-1">All items are well-stocked.</p>
                     </div>
-                </CardBody>
-            </Card>
-        );
-    }
-
-    return (
-        <Card className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
-            <CardHeader className="border-b border-white/5">
-                <h3 className="text-sm font-semibold tracking-tight text-white uppercase flex items-center gap-2">
-                    <AlertTriangle className="text-warning" size={16} /> Stock Alerts
-                </h3>
-                <Link href="/inventory">
-                    <Button variant="ghost" size="sm" className="text-xs text-primary">View All</Button>
-                </Link>
-            </CardHeader>
-            <CardBody>
-                <div className="divide-y divide-white/5">
+                </div>
+            ) : (
+                <div className="space-y-4">
                     {alerts.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0 group">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-200 group-hover:text-primary transition-colors truncate">
-                                    {item.name}
-                                </p>
-                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">
-                                    Threshold: {item.threshold}
-                                </p>
+                        <div key={item.id} className="flex items-center justify-between pb-3 border-b border-gray-100 last:border-0 last:pb-0 group">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className={`p-1.5 rounded-md ${item.stock <= 0 ? 'bg-destructive-bg text-destructive' : 'bg-warning-bg text-warning'}`}>
+                                    <AlertTriangle size={14} />
+                                </div>
+                                <div className="flex-1 min-w-0 pt-0.5">
+                                    <p className="text-sm font-semibold text-gray-900 group-hover:text-info transition-colors truncate">
+                                        {item.name}
+                                    </p>
+                                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
+                                        Threshold: {item.threshold}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 pl-2">
                                 <div className="text-right">
                                     <p className={`text-sm font-bold ${item.stock <= 0 ? 'text-destructive' : 'text-warning'}`}>
-                                        {item.stock <= 0 ? 'Out of Stock' : `${item.stock} left`}
+                                        {item.stock <= 0 ? 'Out' : item.stock}
                                     </p>
                                 </div>
                                 <Link href={`/inventory?search=${encodeURIComponent(item.name)}`}>
-                                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-white/10 rounded-lg">
-                                        <ArrowRight size={16} />
-                                    </Button>
+                                    <button className="h-7 w-7 flex items-center justify-center bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-900 transition-colors">
+                                        <ArrowRight size={14} />
+                                    </button>
                                 </Link>
                             </div>
                         </div>
                     ))}
                 </div>
-            </CardBody>
-        </Card>
+            )}
+        </div>
     );
 }

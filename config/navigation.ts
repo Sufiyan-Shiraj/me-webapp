@@ -19,8 +19,8 @@ export const navItems = [
         icon: ShoppingCart
     },
     {
-        name: 'Analytics',
-        href: '/analytics',
-        icon: PieChart
+        name: 'User Management',
+        href: '/users',
+        icon: Users
     },
 ];

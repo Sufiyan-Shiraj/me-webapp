@@ -80,11 +80,11 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
                 </div>
 
                 {variants.map((variant) => (
-                    <div key={variant.id} className="grid grid-cols-12 gap-3 items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                    <div key={variant.id} className="grid grid-cols-12 gap-3 items-center bg-gray-50/50 p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
                         <div className="col-span-5">
                             <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-                                <span className="font-medium text-white truncate" title={variant.type || 'Standard'}>{variant.type || 'Standard'}</span>
+                                <div className="w-2 h-2 rounded-full bg-gray-900"></div>
+                                <span className="font-medium text-gray-900 truncate" title={variant.type || 'Standard'}>{variant.type || 'Standard'}</span>
                             </div>
                         </div>
                         <div className="col-span-4">

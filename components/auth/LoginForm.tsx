@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/ui/Card';
 import { Lock, Mail, ShieldCheck, Eye, EyeOff, User } from 'lucide-react';
 import Link from 'next/link';
+import clsx from 'clsx';
 
 export default function LoginForm() {
     const { login } = useAuth();
@@ -41,51 +42,52 @@ export default function LoginForm() {
     };
 
     return (
-        <Card className="w-full shadow-2xl border border-white/10 bg-black/40 backdrop-blur-xl relative overflow-hidden">
-            {/* Glow Effect */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-            <CardHeader className="flex-col items-start gap-2 border-b border-white/5 pb-6">
+        <Card className="w-full shadow-lg border border-border bg-white relative overflow-hidden">
+            <CardHeader className="flex-col items-start gap-2 border-b border-border pb-6">
                 <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20 text-primary shadow-lg shadow-primary/10">
+                    <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent shadow-sm">
                         <ShieldCheck size={28} />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-white tracking-wide">Secure Access</h1>
-                        <p className="text-xs text-primary/80 font-medium uppercase tracking-wider">Enterprise Portal</p>
+                        <h1 className="text-xl font-bold text-foreground tracking-wide">Secure Access</h1>
+                        <p className="text-xs text-accent font-bold uppercase tracking-wider">Enterprise Portal</p>
                     </div>
                 </div>
-                <p className="text-sm text-gray-400">Sign in to manage your inventory and sales.</p>
+                <p className="text-sm text-gray-500">Sign in to manage your inventory and sales.</p>
             </CardHeader>
 
             <form onSubmit={handleSubmit}>
                 <CardBody className="flex flex-col gap-5 py-6">
                     {/* Company Selection */}
-                    <div className="flex gap-2 p-1 bg-black/20 rounded-lg border border-white/5">
+                    <div className="flex gap-2 p-1 bg-gray-50 rounded-lg border border-border">
                         <button
                             type="button"
                             onClick={() => setCompany('me')}
-                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${company === 'me'
-                                ? 'bg-primary text-black shadow-lg shadow-primary/20'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                }`}
+                            className={clsx(
+                                "flex-1 py-2 px-3 rounded-md text-sm font-bold transition-all",
+                                company === 'me'
+                                    ? "bg-accent text-white shadow-sm"
+                                    : "text-gray-500 hover:text-foreground hover:bg-gray-100"
+                            )}
                         >
                             ME Enterprises
                         </button>
                         <button
                             type="button"
                             onClick={() => setCompany('mayfield')}
-                            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${company === 'mayfield'
-                                ? 'bg-primary text-black shadow-lg shadow-primary/20'
-                                : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                }`}
+                            className={clsx(
+                                "flex-1 py-2 px-3 rounded-md text-sm font-bold transition-all",
+                                company === 'mayfield'
+                                    ? "bg-accent text-white shadow-sm"
+                                    : "text-gray-500 hover:text-foreground hover:bg-gray-100"
+                            )}
                         >
                             Mayfield
                         </button>
                     </div>
 
                     <div className="relative group">
-                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-primary transition-colors">
+                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-accent transition-colors">
                             <User size={18} />
                         </div>
                         <Input
@@ -94,7 +96,7 @@ export default function LoginForm() {
                             placeholder="Enter username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="bg-black/20 border-white/10 pl-10 focus:border-primary/50 placeholder:text-gray-600"
+                            className="bg-white border-border pl-10 focus:border-accent/50 placeholder:text-gray-400"
                             required
                             autoComplete="username"
                         />
@@ -102,54 +104,53 @@ export default function LoginForm() {
 
                     <div className="flex flex-col gap-2">
                         <div className="relative group">
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-500 group-focus-within:text-primary transition-colors">
+                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-accent transition-colors">
                                 <Lock size={18} />
                             </div>
                             <Input
                                 id="password"
                                 type={showPassword ? "text" : "password"}
-                                // label="Password"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="bg-black/20 border-white/10 pl-10 pr-10 focus:border-primary/50 placeholder:text-gray-600"
+                                className="bg-white border-border pl-10 pr-10 focus:border-accent/50 placeholder:text-gray-400"
                                 required
                                 autoComplete="current-password"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-300 transition-colors focus:outline-none"
+                                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
                             >
                                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
                         <div className="flex justify-end">
-                            <Link href="#" className="text-xs text-primary hover:text-primary/80 transition-colors font-medium">
+                            <Link href="#" className="text-xs text-accent hover:text-accent/80 transition-colors font-bold">
                                 Forgot password?
                             </Link>
                         </div>
                     </div>
 
                     {error && (
-                        <div className="bg-destructive/10 border border-destructive/20 text-destructive p-3 rounded-xl text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+                        <div className="bg-destructive-bg border border-destructive-border text-destructive p-3 rounded-xl text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1 font-medium">
                             <Lock size={16} />
                             {error}
                         </div>
                     )}
                 </CardBody>
 
-                <CardFooter className="flex flex-col gap-4 bg-white/5 border-t border-white/5 pt-6">
+                <CardFooter className="flex flex-col gap-4 bg-gray-50 border-t border-border pt-6">
                     <Button
                         type="submit"
                         fullWidth
                         isLoading={isLoading}
                         size="lg"
-                        className="bg-gradient-to-r from-primary to-accent hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all duration-300 border-none text-black font-bold"
+                        className="font-bold h-12 text-[15px]"
                     >
                         Sign In
                     </Button>
-                    <div className="text-center text-[10px] text-gray-500 uppercase tracking-widest">
+                    <div className="text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold">
                         Protected by enterprise-grade security
                     </div>
                 </CardFooter>

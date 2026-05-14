@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -153,17 +152,17 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
 
                 {/* 1. Item Selection Section */}
-                <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                <div className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
                         <Box size={14} /> Product Selection
                     </label>
 
-                    <div className="flex bg-black/20 p-1 rounded-lg border border-white/5 mb-3">
+                    <div className="flex bg-gray-100/50 p-1 rounded-xl border border-gray-100 mb-3">
                         <button
                             type="button"
                             onClick={() => handleItemModeChange('new')}
-                            className={clsx("flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
-                                itemMode === 'new' ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-white"
+                            className={clsx("flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                                itemMode === 'new' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
                             )}
                         >
                             New Product
@@ -171,8 +170,8 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                         <button
                             type="button"
                             onClick={() => handleItemModeChange('existing')}
-                            className={clsx("flex-1 py-1.5 text-xs font-bold rounded-md transition-all",
-                                itemMode === 'existing' ? "bg-primary text-white shadow-lg" : "text-gray-400 hover:text-white"
+                            className={clsx("flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                                itemMode === 'existing' ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
                             )}
                         >
                             Existing Product
@@ -205,7 +204,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                         <button
                             type="button"
                             onClick={addVariantRow}
-                            className="text-xs text-primary hover:text-primary-300 font-bold flex items-center gap-1"
+                            className="text-xs text-gray-900 hover:text-black font-bold flex items-center gap-1"
                         >
                             <Plus size={12} /> Add Row
                         </button>
@@ -213,7 +212,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
 
                     <div className="space-y-2">
                         {variantRows.map((row, index) => (
-                            <div key={row.id} className="grid grid-cols-12 gap-2 items-start bg-white/5 p-2 rounded-lg border border-white/5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div key={row.id} className="grid grid-cols-12 gap-2 items-start bg-gray-50/50 p-2 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {/* Type Selection */}
                                 <div className="col-span-7 space-y-2">
                                     {itemMode === 'existing' && existingGroupData && (
@@ -221,8 +220,8 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                             <button
                                                 type="button"
                                                 onClick={() => updateRow(row.id, 'typeMode', 'existing')}
-                                                className={clsx("text-[10px] uppercase font-bold px-2 py-0.5 rounded border transition-colors",
-                                                    row.typeMode === 'existing' ? "bg-primary/20 text-primary border-primary/20" : "bg-transparent text-gray-600 border-transparent hover:bg-white/5"
+                                                className={clsx("text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border transition-colors",
+                                                    row.typeMode === 'existing' ? "bg-gray-900 text-white border-gray-900" : "bg-transparent text-gray-500 border-transparent hover:bg-gray-200 hover:text-gray-900"
                                                 )}
                                             >
                                                 Existing
@@ -230,8 +229,8 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                             <button
                                                 type="button"
                                                 onClick={() => updateRow(row.id, 'typeMode', 'new')}
-                                                className={clsx("text-[10px] uppercase font-bold px-2 py-0.5 rounded border transition-colors",
-                                                    row.typeMode === 'new' ? "bg-primary/20 text-primary border-primary/20" : "bg-transparent text-gray-600 border-transparent hover:bg-white/5"
+                                                className={clsx("text-[10px] uppercase font-bold px-2 py-0.5 rounded-md border transition-colors",
+                                                    row.typeMode === 'new' ? "bg-gray-900 text-white border-gray-900" : "bg-transparent text-gray-500 border-transparent hover:bg-gray-200 hover:text-gray-900"
                                                 )}
                                             >
                                                 New Type
@@ -292,7 +291,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                         type="button"
                                         onClick={() => removeVariantRow(row.id)}
                                         disabled={variantRows.length === 1}
-                                        className="text-gray-500 hover:text-destructive disabled:opacity-30 disabled:hover:text-gray-500 transition-colors"
+                                        className="text-gray-400 hover:text-destructive disabled:opacity-30 disabled:hover:text-gray-400 transition-colors"
                                     >
                                         <Trash2 size={14} />
                                     </button>
