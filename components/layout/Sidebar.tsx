@@ -92,18 +92,44 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                         </nav>
                     </div>
 
-                    <div className="p-4 mt-auto">
-                        <div className="p-4 rounded-xl bg-white/5 border border-white/5 mb-3 backdrop-blur-sm">
-                            <div className="flex items-center gap-3">
-                                <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center text-white font-bold border border-white/10">
-                                    {user?.name?.charAt(0) || 'U'}
+                    <div className="p-4 mt-auto space-y-3">
+                        {user?.role === 'admin' ? (
+                            <Link
+                                href="/users"
+                                className={clsx(
+                                    "block p-4 rounded-xl transition-all duration-300 border backdrop-blur-sm group/profile",
+                                    isActive('/users')
+                                        ? "bg-primary/20 border-primary/30 shadow-[0_0_20px_rgba(6,182,212,0.15)]"
+                                        : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/20"
+                                )}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={clsx(
+                                        "h-9 w-9 rounded-full flex items-center justify-center text-white font-bold border transition-all duration-300",
+                                        isActive('/users') ? "bg-primary border-primary shadow-[0_0_10px_rgba(6,182,212,0.5)]" : "bg-gradient-to-tr from-gray-700 to-gray-600 border-white/10 group-hover/profile:border-primary/50"
+                                    )}>
+                                        {user?.name?.charAt(0) || 'U'}
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <p className="text-sm font-medium text-white truncate group-hover/profile:text-primary transition-colors">{user?.name}</p>
+                                        <p className="text-xs text-gray-400 truncate capitalize">Manage Account</p>
+                                    </div>
                                 </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-                                    <p className="text-xs text-gray-400 truncate capitalize">{user?.role}</p>
+                            </Link>
+                        ) : (
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/5 backdrop-blur-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-gray-700 to-gray-600 flex items-center justify-center text-white font-bold border border-white/10">
+                                        {user?.name?.charAt(0) || 'U'}
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+                                        <p className="text-xs text-gray-400 truncate capitalize">{user?.role}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
+                        
                         <button
                             onClick={() => logout()}
                             className="w-full flex items-center justify-center px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white uppercase tracking-wider transition-colors hover:bg-white/5 rounded-lg border border-transparent hover:border-white/5"

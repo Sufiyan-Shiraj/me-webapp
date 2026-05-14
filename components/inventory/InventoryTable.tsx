@@ -12,6 +12,8 @@ import { Select } from '@/components/ui/Select';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 import { InventoryItem } from '@/lib/types';
+import { deleteItem, deleteItemType } from '@/lib/actions/inventoryActions';
+import { Trash2 } from 'lucide-react';
 
 // --- Types ---
 // UI-specific interface for the grouping logic, mapping back to the flat DB schema
@@ -25,11 +27,13 @@ interface ProductGroup {
 interface InventoryCardProps {
     group: ProductGroup;
     onEdit?: (group: ProductGroup) => void;
+    onDelete?: () => void;
     canEdit?: boolean;
 }
 
-const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
+const InventoryCard = ({ group, onEdit, onDelete, canEdit }: InventoryCardProps) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Calculate total quantity for the group
     const totalQuantity = group.variants.reduce((acc, v) => acc + v.quantity, 0);
@@ -73,16 +77,35 @@ const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
 
                     <div className="flex flex-col items-end gap-2">
                         {canEdit && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEdit?.(group);
-                                }}
-                                className="p-1.5 rounded-lg bg-white/5 hover:bg-primary/20 text-gray-400 hover:text-primary transition-all backdrop-blur-md border border-white/5 hover:border-primary/30 z-20"
-                                title="Edit Stock"
-                            >
-                                <Edit size={16} />
-                            </button>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onEdit?.(group);
+                                    }}
+                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-primary/20 text-gray-400 hover:text-primary transition-all backdrop-blur-md border border-white/5 hover:border-primary/30 z-20"
+                                    title="Edit Stock"
+                                >
+                                    <Edit size={16} />
+                                </button>
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (confirm(`Are you sure you want to delete ${group.name}? This will delete all variants.`)) {
+                                            const res = await deleteItem(group.variants[0].item_id as any);
+                                            if (res.success) {
+                                                onDelete?.();
+                                            } else {
+                                                alert(res.error);
+                                            }
+                                        }
+                                    }}
+                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-destructive/20 text-gray-400 hover:text-destructive transition-all backdrop-blur-md border border-white/5 hover:border-destructive/30 z-20"
+                                    title="Delete Item"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
                         )}
                         <div className="text-right">
                             <span className="text-[10px] text-gray-500 uppercase font-bold block">Total Qty</span>
@@ -122,9 +145,27 @@ const InventoryCard = ({ group, onEdit, canEdit }: InventoryCardProps) => {
 
                         {group.variants.map((variant) => (
                             <React.Fragment key={variant.id}>
-                                <div className="text-gray-400 py-1 flex items-center">
+                                <div className="text-gray-400 py-1 flex items-center group/var">
                                     <div className="w-1.5 h-1.5 rounded-full bg-primary/50 mr-2"></div>
-                                    {variant.type || 'Standard'}
+                                    <span className="flex-1">{variant.type || 'Standard'}</span>
+                                    {canEdit && (
+                                        <button
+                                            onClick={async () => {
+                                                if (confirm(`Delete variant ${variant.type || 'Standard'}?`)) {
+                                                    const res = await deleteItemType(variant.id);
+                                                    if (res.success) {
+                                                        onDelete?.();
+                                                    } else {
+                                                        alert(res.error);
+                                                    }
+                                                }
+                                            }}
+                                            className="opacity-50 hover:opacity-100 p-1 text-gray-500 hover:text-destructive transition-all"
+                                            title="Delete Variant"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="text-white font-mono text-right py-1">
                                     {variant.quantity.toLocaleString()}
@@ -259,16 +300,66 @@ export default function InventoryTable() {
         setIsGroupModalOpen(true);
     };
 
-    const handleModalSubmit = (data: { item: string; variants: { type: string; quantity: number }[] }) => {
+    const handleModalSubmit = (data: { item: string; variants: { type: string; quantity: number; unit: string }[] }) => {
         console.log("Saving new item group:", data);
         alert(`Saved ${data.item} with ${data.variants.length} variants - Mock Save`);
         // In real impl: Insert into DB (multiple rows)
     };
 
-    const handleGroupSave = (baseId: number, updates: { id: string; quantity: number }[]) => {
+    const handleGroupSave = (baseId: number, updates: { id: string; quantity: number; unit: string }[]) => {
         console.log(`Updating Group ${baseId}:`, updates);
         alert(`Updated ${updates.length} variants for Item ID ${baseId} - Mock Save`);
         // In real impl: Iterate and update DB for each
+    };
+
+    const handleExport = () => {
+        if (sortedAndFilteredGroups.length === 0) {
+            alert("No data to export");
+            return;
+        }
+
+        // Prepare data for CSV
+        const exportData = sortedAndFilteredGroups.flatMap(group => 
+            group.variants.map(v => ({
+                'Item Name': group.name,
+                'Variant': v.type || 'Standard',
+                'Quantity': v.quantity,
+                'Unit': v.unit || 'kg'
+            }))
+        );
+
+        // Define CSV headers
+        const headers = ['Item Name', 'Variant', 'Quantity', 'Unit'];
+        
+        // Convert to CSV string
+        const csvRows = [
+            headers.join(','), // Header row
+            ...exportData.map(row => 
+                headers.map(header => {
+                    const val = row[header as keyof typeof row];
+                    // Escape commas in values
+                    const escaped = typeof val === 'string' && val.includes(',') 
+                        ? `"${val}"` 
+                        : val;
+                    return escaped;
+                }).join(',')
+            )
+        ];
+
+        const csvContent = csvRows.join('\n');
+        
+        // Create download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().split('T')[0];
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `inventory_report_${timestamp}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (
@@ -285,7 +376,7 @@ export default function InventoryTable() {
                         />
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
                     </div>
-                    <div className="w-full md:w-48 z-10">
+                    <div className="w-full md:w-48">
                         <Select
                             value={sortOption}
                             onChange={(val) => setSortOption(val)}
@@ -300,7 +391,7 @@ export default function InventoryTable() {
                 </div>
 
                 <div className="flex gap-3 mt-2 lg:mt-0">
-                    <Button variant="secondary" icon={Download} size="sm">Export Report</Button>
+                    <Button variant="secondary" icon={Download} size="sm" onClick={handleExport}>Export Report</Button>
                     {canEdit && <Button variant="primary" icon={Plus} size="sm" className="shadow-lg shadow-primary/20" onClick={handleAddProduct}>Add Item</Button>}
                 </div>
             </div>
@@ -319,6 +410,7 @@ export default function InventoryTable() {
                             group={group}
                             canEdit={canEdit}
                             onEdit={handleEditGroup}
+                            onDelete={fetchInventory}
                         />
                     ))}
                 </div>

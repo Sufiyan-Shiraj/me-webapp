@@ -26,17 +26,17 @@ const SaleRow = ({ sale, onUpdateItem }: SaleRowProps) => {
 
     // Derived statuses
     const getItemStatus = (item: InvoiceItem): ItemStatus => {
-        if (item.done) return 'completed';
-        if (item.pending > 0) return 'pending';
+        if (item.done || item.pending === 0) return 'completed';
+        if (item.pending < item.quantity) return 'pending';
         return 'waiting';
     };
 
     const overallStatus = useMemo(() => {
         if (!sale.items || sale.items.length === 0) return 'waiting';
-        const allCompleted = sale.items.every(item => item.done);
+        const allCompleted = sale.items.every(item => item.done || item.pending === 0);
         if (allCompleted) return 'completed';
-        const anyPending = sale.items.some(item => item.pending > 0);
-        if (anyPending) return 'pending';
+        const anyFulfilled = sale.items.some(item => item.pending < item.quantity);
+        if (anyFulfilled) return 'pending';
         return 'waiting';
     }, [sale.items]);
 
@@ -92,9 +92,9 @@ const SaleRow = ({ sale, onUpdateItem }: SaleRowProps) => {
                         >
                             <div className="grid grid-cols-5 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-white/5 pb-2 mb-2">
                                 <div className="col-span-2">Item / Variant</div>
-                                <div className="text-center">Qty / Pending</div>
+                                <div className="col-span-2 text-center">Fulfillment</div>
                                 <div className="text-center">Status</div>
-                                <div className="text-right">Mark Done</div>
+                                <div className="text-right">Action</div>
                             </div>
                             {sale.items.map((item) => {
                                 const status = getItemStatus(item);
@@ -104,23 +104,42 @@ const SaleRow = ({ sale, onUpdateItem }: SaleRowProps) => {
                                             {item.product_name}
                                             <span className="text-[10px] text-gray-500 block">{item.variant}</span>
                                         </div>
-                                        <div className="text-center">
-                                            <div className="text-xs text-white">{item.quantity} nos</div>
-                                            {item.pending > 0 && <div className="text-[10px] text-warning">{item.pending} pending</div>}
+                                        <div className="col-span-2">
+                                            <div className="flex items-center justify-center gap-3">
+                                                <div className="text-center">
+                                                    <div className="text-[10px] text-gray-500 uppercase font-bold">Total</div>
+                                                    <div className="text-sm text-white font-mono">{item.quantity}</div>
+                                                </div>
+                                                <div className="text-gray-700">/</div>
+                                                <div className="text-center">
+                                                    <div className="text-[10px] text-gray-500 uppercase font-bold">Pending</div>
+                                                    <Input
+                                                        type="number"
+                                                        value={item.pending.toString()}
+                                                        onChange={(e) => {
+                                                            const val = Math.max(0, Math.min(item.quantity, Number(e.target.value)));
+                                                            onUpdateItem?.(item.id, { pending: val, done: val === 0 });
+                                                        }}
+                                                        className="w-16 h-8 p-1 text-center bg-black/40 border-white/10 text-white font-mono text-xs"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="text-center">
-                                            <span className={clsx(styles.badge, getStatusBadgeClass(status), 'text-[10px] py-0 px-2')}>
+                                            <span className={clsx(styles.badge, getStatusBadgeClass(status), 'text-[10px] py-0 px-2 uppercase')}>
                                                 {status}
                                             </span>
                                         </div>
                                         <div className="text-right">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={item.done}
-                                                onChange={(e) => onUpdateItem?.(item.id, { done: e.target.checked })}
-                                                className="w-4 h-4 rounded border-white/10 bg-black/40 text-primary focus:ring-primary/50 cursor-pointer"
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
+                                            <Button
+                                                size="sm"
+                                                variant={item.done ? "ghost" : "primary"}
+                                                disabled={item.done}
+                                                className="h-7 text-[10px] px-2 py-0"
+                                                onClick={() => onUpdateItem?.(item.id, { pending: 0, done: true })}
+                                            >
+                                                {item.done ? 'Finished' : 'Mark Done'}
+                                            </Button>
                                         </div>
                                     </div>
                                 );
@@ -223,6 +242,7 @@ export default function SalesPage() {
             const { error } = await supabase
                 .from('me_sales')
                 .update({ 
+                    pending: updates.pending ?? (updates.done ? 0 : undefined),
                     done: updates.done,
                     done_time: updates.done ? new Date().toISOString() : null
                 })

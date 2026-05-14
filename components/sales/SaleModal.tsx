@@ -8,6 +8,7 @@ import { Plus, Trash2, User, UserPlus, Box, Layers } from 'lucide-react';
 import clsx from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { Customer, ItemType } from '@/lib/types';
+import { Select } from '@/components/ui/Select';
 
 interface SaleModalProps {
     isOpen: boolean;
@@ -215,17 +216,12 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                                 autoFocus
                             />
                         ) : (
-                            <select
+                            <Select
+                                options={customers.map(c => ({ value: c.id, label: c.name }))}
                                 value={customerInput}
-                                onChange={(e) => setCustomerInput(e.target.value)}
-                                className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50"
-                                required
-                            >
-                                <option value="" disabled>Select a customer...</option>
-                                {customers.map(c => (
-                                    <option key={c.id} value={c.id} className="bg-[#111]">{c.name}</option>
-                                ))}
-                            </select>
+                                onChange={setCustomerInput}
+                                placeholder="Select a customer..."
+                            />
                         )}
                     </div>
 
@@ -249,23 +245,18 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                                 <div key={row.id} className="flex items-end gap-2 bg-white/5 p-2 rounded-lg border border-white/5">
                                     <div className="flex-1 space-y-1">
                                         {index === 0 && <label className="text-[10px] uppercase font-bold text-gray-500">Product & Variant</label>}
-                                        <select
+                                        <Select
+                                            options={inventory.flatMap(group => 
+                                                group.types.map((type: any) => ({
+                                                    value: type.id,
+                                                    label: `${group.itemName} - ${type.variantName} (${type.available} left)`
+                                                }))
+                                            )}
                                             value={row.itemTypeId}
-                                            onChange={(e) => updateRow(row.id, 'itemTypeId', e.target.value)}
-                                            className="w-full bg-black/30 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50"
-                                            required
-                                        >
-                                            <option value="" disabled>Select Item...</option>
-                                            {inventory.map(group => (
-                                                <optgroup key={group.itemName} label={group.itemName} className="bg-[#111] text-primary font-bold">
-                                                    {group.types.map((type: any) => (
-                                                        <option key={type.id} value={type.id} className="text-white">
-                                                            {type.variantName} (Stock: {type.available})
-                                                        </option>
-                                                    ))}
-                                                </optgroup>
-                                            ))}
-                                        </select>
+                                            onChange={(val) => updateRow(row.id, 'itemTypeId', val)}
+                                            placeholder="Select Item..."
+                                            className="text-xs"
+                                        />
                                     </div>
                                     <div className="w-24 space-y-1">
                                         {index === 0 && <label className="text-[10px] uppercase font-bold text-gray-500">Qty</label>}

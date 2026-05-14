@@ -6,8 +6,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { InventoryItem } from '@/lib/types';
-import { Plus, Trash2, Box, Layers } from 'lucide-react';
+import { Plus, Trash2, Box, Layers, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
+import { Select } from '@/components/ui/Select';
 
 interface ProductGroup {
     name: string;
@@ -17,7 +18,7 @@ interface ProductGroup {
 interface ProductModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (item: { item: string; variants: { type: string; quantity: number }[] }) => void;
+    onSubmit: (item: { item: string; variants: { type: string; quantity: number; unit: string }[] }) => void;
     initialData?: InventoryItem; // Kept for potential compatibility, though this new flow is optimized for Add
     groups?: ProductGroup[];
 }
@@ -31,6 +32,7 @@ interface VariantRow {
     selectedType: string;
     newType: string;
     quantity: string;
+    unit: string;
 }
 
 export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: ProductModalProps) {
@@ -40,7 +42,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
 
     // Rows for variants
     const [variantRows, setVariantRows] = useState<VariantRow[]>([
-        { id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '' }
+        { id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '', unit: 'kg' }
     ]);
 
     // Reset state when modal opens
@@ -49,7 +51,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             setItemMode('new');
             setSelectedGroup('');
             setNewItemName('');
-            setVariantRows([{ id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '' }]);
+            setVariantRows([{ id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '', unit: 'kg' }]);
         }
     }, [isOpen]);
 
@@ -73,7 +75,8 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                 typeMode: itemMode === 'new' ? 'new' : 'existing',
                 selectedType: '',
                 newType: '',
-                quantity: ''
+                quantity: '',
+                unit: 'kg'
             }
         ]);
     };
@@ -102,10 +105,11 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
         }
 
         // Validate rows
-        const validVariants: { type: string; quantity: number }[] = [];
+        const validVariants: { type: string; quantity: number; unit: string }[] = [];
         for (const row of variantRows) {
             const type = row.typeMode === 'new' ? row.newType : row.selectedType;
             const quantity = Number(row.quantity);
+            const unit = row.unit || 'kg';
 
             // Allow empty type (Standard) if user intended, but generally enforce input if "New Type" is selected and typed
             // If type is empty, we can default to 'Standard' or null in backend handling, but let's pass it as is.
@@ -113,7 +117,8 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             if (quantity > 0) {
                 validVariants.push({
                     type: type || 'Standard',
-                    quantity
+                    quantity,
+                    unit
                 });
             }
         }
@@ -182,21 +187,12 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                             autoFocus
                         />
                     ) : (
-                        <div className="relative">
-                            <select
-                                value={selectedGroup}
-                                onChange={(e) => setSelectedGroup(e.target.value)}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary/50 appearance-none cursor-pointer hover:bg-white/5 transition-colors"
-                            >
-                                <option value="" disabled>Select a product...</option>
-                                {groups.map(g => (
-                                    <option key={g.name} value={g.name} className="bg-[#111]">{g.name}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0.5L5 5.5L10 0.5H0Z" /></svg>
-                            </div>
-                        </div>
+                        <Select
+                            options={groups.map(g => ({ value: g.name, label: g.name }))}
+                            value={selectedGroup}
+                            onChange={setSelectedGroup}
+                            placeholder="Select a product..."
+                        />
                     )}
                 </div>
 
@@ -244,18 +240,13 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                     )}
 
                                     {row.typeMode === 'existing' && itemMode === 'existing' ? (
-                                        <div className="relative">
-                                            <select
-                                                value={row.selectedType}
-                                                onChange={(e) => updateRow(row.id, 'selectedType', e.target.value)}
-                                                className="w-full bg-black/30 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white focus:outline-none focus:border-primary/50 appearance-none cursor-pointer"
-                                            >
-                                                <option value="" disabled>Select Type...</option>
-                                                {existingGroupData?.variants.map(v => (
-                                                    <option key={v.id} value={v.type || ''} className="bg-[#111]">{v.type || 'Standard'}</option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                        <Select
+                                            options={existingGroupData?.variants.map(v => ({ value: v.type || '', label: v.type || 'Standard' })) || []}
+                                            value={row.selectedType}
+                                            onChange={(val) => updateRow(row.id, 'selectedType', val)}
+                                            placeholder="Select Type..."
+                                            className="h-8"
+                                        />
                                     ) : (
                                         <Input
                                             placeholder="Type (e.g. Natural)"
@@ -266,9 +257,8 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                     )}
                                 </div>
 
-                                {/* Quantity */}
-                                <div className="col-span-4 mt-auto">
-                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold mb-1">Qty (kg)</label>}
+                                <div className="col-span-3 mt-auto">
+                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold mb-1">Qty</label>}
                                     <Input
                                         type="number"
                                         placeholder="0"
@@ -276,6 +266,23 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                         onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
                                         className="h-8 text-right font-mono text-xs"
                                         min="0"
+                                    />
+                                </div>
+
+                                {/* Unit */}
+                                <div className="col-span-2 mt-auto">
+                                    {index === 0 && <label className="block text-[10px] text-gray-500 uppercase font-bold mb-1">Unit</label>}
+                                    <Select
+                                        options={[
+                                            { value: 'kg', label: 'kg' },
+                                            { value: 'g', label: 'g' },
+                                            { value: 'pcs', label: 'pcs' },
+                                            { value: 'Nos', label: 'Nos' },
+                                            { value: 'ltr', label: 'ltr' },
+                                        ]}
+                                        value={row.unit}
+                                        onChange={(val) => updateRow(row.id, 'unit', val)}
+                                        className="h-8"
                                     />
                                 </div>
 

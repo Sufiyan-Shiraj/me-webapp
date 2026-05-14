@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { InventoryItem } from '@/lib/types';
 import clsx from 'clsx';
+import { Select } from '@/components/ui/Select';
 
 interface ProductGroup {
     name: string;
@@ -15,7 +16,7 @@ interface ProductGroup {
 interface GroupEditModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (item_id: number, updates: { id: string; quantity: number }[]) => void;
+    onSubmit: (item_id: number, updates: { id: string; quantity: number; unit: string }[]) => void;
     group?: ProductGroup;
 }
 
@@ -35,6 +36,12 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
         ));
     };
 
+    const handleUnitChange = (id: string, newUnit: string) => {
+        setVariants(prev => prev.map(v =>
+            v.id === id ? { ...v, unit: newUnit } : v
+        ));
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!group) return;
@@ -42,7 +49,8 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
         const baseId = group.variants[0]?.item_id;
         const updates = variants.map(v => ({
             id: v.id,
-            quantity: v.quantity
+            quantity: v.quantity,
+            unit: v.unit || 'kg'
         }));
 
         onSubmit(baseId, updates);
@@ -66,25 +74,39 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
         >
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
                 <div className="grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">
-                    <div className="col-span-6">Variant Type</div>
-                    <div className="col-span-6">Quantity (kg)</div>
+                    <div className="col-span-5">Variant Type</div>
+                    <div className="col-span-4">Quantity</div>
+                    <div className="col-span-3">Unit</div>
                 </div>
 
                 {variants.map((variant) => (
-                    <div key={variant.id} className="grid grid-cols-12 gap-4 items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
-                        <div className="col-span-6">
+                    <div key={variant.id} className="grid grid-cols-12 gap-3 items-center bg-white/5 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                        <div className="col-span-5">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-primary/50"></div>
-                                <span className="font-medium text-white">{variant.type || 'Standard'}</span>
+                                <span className="font-medium text-white truncate" title={variant.type || 'Standard'}>{variant.type || 'Standard'}</span>
                             </div>
                         </div>
-                        <div className="col-span-6">
+                        <div className="col-span-4">
                             <Input
                                 type="number"
                                 value={variant.quantity.toString()}
                                 onChange={(e) => handleQuantityChange(variant.id, e.target.value)}
-                                className="text-right font-mono"
+                                className="text-right font-mono text-sm"
                                 min="0"
+                            />
+                        </div>
+                        <div className="col-span-3">
+                            <Select
+                                options={[
+                                    { value: 'kg', label: 'kg' },
+                                    { value: 'g', label: 'g' },
+                                    { value: 'pcs', label: 'pcs' },
+                                    { value: 'Nos', label: 'Nos' },
+                                    { value: 'ltr', label: 'ltr' },
+                                ]}
+                                value={variant.unit || 'kg'}
+                                onChange={(val) => handleUnitChange(variant.id, val)}
                             />
                         </div>
                     </div>
