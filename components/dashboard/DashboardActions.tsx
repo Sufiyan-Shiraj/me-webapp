@@ -19,7 +19,7 @@ export default function DashboardActions() {
 
     const handleSaleSubmit = (invoice: Omit<SaleInvoice, 'id' | 'items'>) => {
         console.log("New Sale Recorded from Dashboard:", invoice);
-        alert(`Sale #${invoice.invoice_number} recorded successfully!`);
+        alert(`Sale #${invoice.sale_id} recorded successfully!`);
     };
 
     return (
