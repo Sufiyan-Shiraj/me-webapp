@@ -96,8 +96,8 @@ export default function UsersPage() {
                 <p className="text-gray-500">Create, manage and monitor system access.</p>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                <Card className="lg:col-span-1 bg-white border-border shadow-sm overflow-hidden h-fit sticky top-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+                <Card className="lg:col-span-1 bg-white border-border shadow-sm overflow-hidden h-fit lg:sticky lg:top-8 z-10">
                     <CardHeader className="border-b border-border pb-4">
                         <div className="flex items-center gap-2">
                             <div className="p-2 rounded-lg bg-accent/10 text-accent">
@@ -147,7 +147,7 @@ export default function UsersPage() {
                                             { value: 'staff', label: 'Staff (Sales/Inventory View)' },
                                             { value: 'admin', label: 'Administrator (Full Access)' }
                                         ]}
-                                        className="z-50"
+                                        className="relative z-[60]"
                                     />
                                 </div>
 
@@ -193,8 +193,8 @@ export default function UsersPage() {
                     </CardBody>
                 </Card>
 
-                <div className="lg:col-span-2 space-y-8">
-                    <Card className="bg-white border-border shadow-sm overflow-hidden">
+                <div className="lg:col-span-2 space-y-6 lg:space-y-8 mt-6 lg:mt-0">
+                    <Card className="bg-white border-border shadow-sm overflow-hidden relative z-0">
                         <CardHeader className="border-b border-border pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <div 

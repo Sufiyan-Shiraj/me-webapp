@@ -16,7 +16,7 @@ interface ProductGroup {
 interface GroupEditModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (item_id: number, updates: { id: string; quantity: number; unit: string }[]) => void;
+    onSubmit: (item_id: string, updates: { id: string; quantity: number; unit: string }[]) => void | Promise<void>;
     group?: ProductGroup;
 }
 

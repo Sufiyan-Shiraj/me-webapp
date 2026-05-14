@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 import { InventoryItem } from '@/lib/types';
-import { deleteItem, deleteItemType } from '@/lib/actions/inventoryActions';
+import { deleteItem, deleteItemType, saveInventory, updateInventoryQuantities } from '@/lib/actions/inventoryActions';
 
 // --- Types ---
 interface ProductGroup {
@@ -276,14 +276,22 @@ export default function InventoryTable() {
         setIsGroupModalOpen(true);
     };
 
-    const handleModalSubmit = (data: { item: string; variants: { type: string; quantity: number; unit: string }[] }) => {
-        console.log("Saving new item group:", data);
-        fetchInventory();
+    const handleModalSubmit = async (data: { item: string; variants: { type: string; quantity: number; unit: string }[] }) => {
+        const res = await saveInventory(data);
+        if (res.success) {
+            fetchInventory();
+        } else {
+            alert(res.error);
+        }
     };
 
-    const handleGroupSave = (baseId: number, updates: { id: string; quantity: number; unit: string }[]) => {
-        console.log(`Updating Group ${baseId}:`, updates);
-        fetchInventory();
+    const handleGroupSave = async (baseId: string, updates: { id: string; quantity: number; unit: string }[]) => {
+        const res = await updateInventoryQuantities(updates);
+        if (res.success) {
+            fetchInventory();
+        } else {
+            alert(res.error);
+        }
     };
 
     const handleExport = () => {

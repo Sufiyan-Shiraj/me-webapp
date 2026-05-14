@@ -48,9 +48,9 @@ export default function Topbar() {
             <div className="flex h-20 items-center px-4 md:px-8 max-w-[1600px] mx-auto">
                 <div className="flex items-center gap-3 mr-10">
                     <div className="h-10 w-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-bold shadow-md">
-                        S
+                        M
                     </div>
-                    <span className="font-bold text-xl tracking-tight text-gray-900">SIMS Enterprise</span>
+                    <span className="font-bold text-xl tracking-tight text-gray-900 uppercase">ME FLOW</span>
                 </div>
 
                 {/* Navigation */}

@@ -6,7 +6,7 @@ import { TablePagination } from '@/components/ui/TablePagination';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Plus, Search, FileText } from 'lucide-react';
+import { Plus, Search, FileText, Filter, X, ChevronDown, Calendar, Hash, Download } from 'lucide-react';
 import { SaleInvoice, InvoiceItem, ItemStatus } from '@/lib/types';
 import clsx from 'clsx';
 import styles from '@/components/ui/ui.module.css';
@@ -14,6 +14,7 @@ import { SaleModal } from '@/components/sales/SaleModal';
 import { motion } from 'framer-motion';
 
 import { supabase } from '@/lib/supabase';
+import { updateSaleItem } from '@/lib/actions/salesActions';
 
 interface SaleRowProps {
     sale: SaleInvoice;
@@ -160,6 +161,41 @@ export default function SalesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // Advanced Filters State
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filters, setFilters] = useState({
+        customer: 'all',
+        item: 'all',
+        variant: 'all',
+        minQty: '',
+        maxQty: '',
+        startDate: '',
+        endDate: ''
+    });
+
+    const filterOptions = useMemo(() => {
+        const customers = new Set<string>();
+        const items = new Set<string>();
+        const variants = new Map<string, Set<string>>();
+
+        data.forEach(sale => {
+            customers.add(sale.customer_name);
+            sale.items.forEach(item => {
+                items.add(item.product_name);
+                if (!variants.has(item.product_name)) {
+                    variants.set(item.product_name, new Set());
+                }
+                variants.get(item.product_name)!.add(item.variant);
+            });
+        });
+
+        return {
+            customers: Array.from(customers).sort(),
+            items: Array.from(items).sort(),
+            variants: variants
+        };
+    }, [data]);
 
     useEffect(() => {
         fetchSales();
@@ -237,16 +273,12 @@ export default function SalesPage() {
 
     const handleUpdateItem = async (itemId: string, updates: Partial<InvoiceItem>) => {
         try {
-            const { error } = await supabase
-                .from('me_sales')
-                .update({
-                    pending: updates.pending ?? (updates.done ? 0 : undefined),
-                    done: updates.done,
-                    done_time: updates.done ? new Date().toISOString() : null
-                })
-                .eq('id', itemId);
+            const res = await updateSaleItem(itemId, {
+                pending: updates.pending,
+                done: updates.done
+            });
 
-            if (error) throw error;
+            if (!res.success) throw new Error(res.error);
 
             setData(prev => prev.map(sale => ({
                 ...sale,
@@ -254,15 +286,47 @@ export default function SalesPage() {
             })));
         } catch (error) {
             console.error("Error updating item:", error);
+            alert("Failed to update item fulfillment.");
         }
     };
 
     const filteredData = useMemo(() => {
-        return data.filter(inv =>
-            inv.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            inv.sale_id.toString().includes(searchQuery)
-        );
-    }, [searchQuery, data]);
+        return data.filter(inv => {
+            // Search Query (Customer or Sale ID)
+            const matchesSearch = inv.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                inv.sale_id.toString().includes(searchQuery);
+            if (!matchesSearch) return false;
+
+            // Customer Filter
+            if (filters.customer !== 'all' && inv.customer_name !== filters.customer) return false;
+
+            // Item and Variant Filters
+            const matchesItems = inv.items.some(item => {
+                const itemMatch = filters.item === 'all' || item.product_name === filters.item;
+                const variantMatch = filters.variant === 'all' || item.variant === filters.variant;
+                
+                // Quantity Filters
+                const minMatch = !filters.minQty || item.quantity >= Number(filters.minQty);
+                const maxMatch = !filters.maxQty || item.quantity <= Number(filters.maxQty);
+
+                return itemMatch && variantMatch && minMatch && maxMatch;
+            });
+            if (!matchesItems) return false;
+
+            // Date Filters
+            if (filters.startDate) {
+                const start = new Date(filters.startDate);
+                if (new Date(inv.date) < start) return false;
+            }
+            if (filters.endDate) {
+                const end = new Date(filters.endDate);
+                end.setHours(23, 59, 59, 999);
+                if (new Date(inv.date) > end) return false;
+            }
+
+            return true;
+        });
+    }, [searchQuery, data, filters]);
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     const paginatedData = filteredData.slice(
@@ -274,6 +338,44 @@ export default function SalesPage() {
         fetchSales();
     };
 
+    const handleExport = () => {
+        if (filteredData.length === 0) {
+            alert("No data to export");
+            return;
+        }
+
+        const headers = ['Sale ID', 'Date', 'Customer', 'Product', 'Variant', 'Quantity', 'Pending', 'Status'];
+        
+        const csvData = filteredData.flatMap(sale => 
+            sale.items.map(item => {
+                const itemStatus = item.done || item.pending === 0 ? 'Completed' : (item.pending < item.quantity ? 'Pending' : 'Waiting');
+                return [
+                    `#${sale.sale_id}`,
+                    new Date(sale.date).toLocaleDateString(),
+                    sale.customer_name,
+                    item.product_name,
+                    item.variant,
+                    item.quantity,
+                    item.pending,
+                    itemStatus
+                ].join(',');
+            })
+        );
+
+        const csvContent = [headers.join(','), ...csvData].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().split('T')[0];
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `sales_report_${timestamp}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
@@ -282,22 +384,159 @@ export default function SalesPage() {
                     <p className="text-sm text-gray-500 mt-1">Manage and track your customer orders.</p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="secondary" className="h-11" icon={Download} onClick={handleExport}>
+                        Export CSV
+                    </Button>
                     <Button variant="primary" className="h-11" icon={Plus} onClick={() => setIsModalOpen(true)}>
                         New Sale
                     </Button>
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-between gap-4 p-6 rounded-3xl bg-white border border-gray-100 shadow-sm">
-                <div className="relative w-full sm:w-96 group">
-                    <Input
-                        placeholder="Search customer or sale ID..."
-                        className="pl-10 h-11 bg-gray-50 border-gray-200 rounded-xl focus:ring-gray-900 focus:border-gray-900"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors" size={18} />
+            <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between gap-4 p-6 rounded-3xl bg-white border border-gray-100 shadow-sm">
+                    <div className="relative w-full sm:w-96 group">
+                        <Input
+                            placeholder="Search customer or sale ID..."
+                            className="pl-10 h-11 bg-gray-50 border-gray-200 rounded-xl focus:ring-gray-900 focus:border-gray-900"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors" size={18} />
+                    </div>
+                    <Button 
+                        variant="secondary" 
+                        icon={isFilterOpen ? X : Filter} 
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className={clsx("h-11 px-6 rounded-xl", isFilterOpen && "bg-gray-900 text-white hover:bg-black")}
+                    >
+                        {isFilterOpen ? "Close Filters" : "Filters"}
+                    </Button>
                 </div>
+
+                {/* Filter Panel */}
+                {isFilterOpen && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-6 bg-white border border-gray-100 rounded-3xl shadow-md grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-top-4 duration-300"
+                    >
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Search size={12} /> Customer
+                            </label>
+                            <select 
+                                value={filters.customer}
+                                onChange={(e) => setFilters(f => ({ ...f, customer: e.target.value }))}
+                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all"
+                            >
+                                <option value="all">All Customers</option>
+                                {filterOptions.customers.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Plus size={12} /> Product
+                            </label>
+                            <select 
+                                value={filters.item}
+                                onChange={(e) => setFilters(f => ({ ...f, item: e.target.value, variant: 'all' }))}
+                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all"
+                            >
+                                <option value="all">All Products</option>
+                                {filterOptions.items.map(i => <option key={i} value={i}>{i}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <ChevronDown size={12} /> Variant
+                            </label>
+                            <select 
+                                value={filters.variant}
+                                onChange={(e) => setFilters(f => ({ ...f, variant: e.target.value }))}
+                                disabled={filters.item === 'all'}
+                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all disabled:opacity-50"
+                            >
+                                <option value="all">All Variants</option>
+                                {filters.item !== 'all' && filterOptions.variants.get(filters.item) && 
+                                    Array.from(filterOptions.variants.get(filters.item)!).sort().map(v => (
+                                        <option key={v} value={v}>{v}</option>
+                                    ))
+                                }
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Hash size={12} /> Quantity Range
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <Input 
+                                    type="number" 
+                                    placeholder="Min" 
+                                    className="h-10 text-xs"
+                                    value={filters.minQty}
+                                    onChange={(e) => setFilters(f => ({ ...f, minQty: e.target.value }))}
+                                />
+                                <span className="text-gray-300">-</span>
+                                <Input 
+                                    type="number" 
+                                    placeholder="Max" 
+                                    className="h-10 text-xs"
+                                    value={filters.maxQty}
+                                    onChange={(e) => setFilters(f => ({ ...f, maxQty: e.target.value }))}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2 space-y-2">
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <Calendar size={12} /> Date Range
+                            </label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="relative group">
+                                    <Input 
+                                        type="date" 
+                                        className="h-10 pl-9 text-xs"
+                                        value={filters.startDate}
+                                        onChange={(e) => setFilters(f => ({ ...f, startDate: e.target.value }))}
+                                    />
+                                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                </div>
+                                <div className="relative group">
+                                    <Input 
+                                        type="date" 
+                                        className="h-10 pl-9 text-xs"
+                                        value={filters.endDate}
+                                        onChange={(e) => setFilters(f => ({ ...f, endDate: e.target.value }))}
+                                    />
+                                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2 flex items-end justify-end gap-3">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setFilters({
+                                    customer: 'all',
+                                    item: 'all',
+                                    variant: 'all',
+                                    minQty: '',
+                                    maxQty: '',
+                                    startDate: '',
+                                    endDate: ''
+                                })}
+                                className="text-[10px] font-bold uppercase tracking-wider"
+                            >
+                                Reset All
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
             </div>
 
             <Table>

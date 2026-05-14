@@ -12,7 +12,7 @@ export interface User {
 
 export interface InventoryItem {
     id: string; // uuid
-    item_id: number; // bigint
+    item_id: string; // uuid
     item: string; // name
     type: string | null; // variant
     unit?: string;

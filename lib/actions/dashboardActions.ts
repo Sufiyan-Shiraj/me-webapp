@@ -1,26 +1,40 @@
 'use server'
 
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a server-side admin client to bypass RLS for dashboard stats
+const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 export async function getDashboardStats() {
     try {
-        // 1. Get Sales Count (Total unique sale_ids)
-        const { data: sales, error: salesError } = await supabase
+        // 1. Get Sales Count (Total unique sale_ids) and Total Units Sold
+        const { data: sales, error: salesError } = await supabaseAdmin
             .from('me_sales')
-            .select('sale_id');
+            .select('sale_id, quantity');
         
-        if (salesError) throw salesError;
-        const uniqueSales = new Set(sales.map(s => s.sale_id)).size;
+        if (salesError) {
+            console.error('Error fetching sales:', salesError);
+        }
+
+        const uniqueSales = sales ? new Set(sales.map(s => s.sale_id)).size : 0;
+        const totalUnitsSold = sales ? sales.reduce((sum, s) => sum + Number(s.quantity), 0) : 0;
 
         // 2. Get Active Customers Count
-        const { count: customerCount, error: customerError } = await supabase
+        const { data: customers, error: customerError, count: customerCount } = await supabaseAdmin
             .from('customers')
-            .select('*', { count: 'exact', head: true });
+            .select('*', { count: 'exact' });
         
-        if (customerError) throw customerError;
+        if (customerError) {
+            console.error('Error fetching customers:', customerError);
+        }
+
+        const finalCustomerCount = customerCount ?? (customers?.length || 0);
 
         // 3. Get Inventory Status with Item Names
-        const { data: inventory, error: inventoryError } = await supabase
+        const { data: inventory, error: inventoryError } = await supabaseAdmin
             .from('me_item_types')
             .select(`
                 id,
@@ -41,7 +55,8 @@ export async function getDashboardStats() {
 
         return {
             salesCount: uniqueSales,
-            customerCount: customerCount || 0,
+            customerCount: finalCustomerCount,
+            totalUnitsSold,
             inventory: {
                 totalItems,
                 totalQuantity,

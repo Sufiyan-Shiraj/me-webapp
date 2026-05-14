@@ -6,8 +6,8 @@ import { AuthProvider } from "@/context/AuthContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Sales & Inventory Manager",
-  description: "Enterprise Sales and Inventory Management System",
+  title: "ME Flow",
+  description: "Sales and Inventory Management Flow",
 };
 
 export default function RootLayout({

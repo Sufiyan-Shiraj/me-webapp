@@ -9,6 +9,8 @@ import clsx from 'clsx';
 import { supabase } from '@/lib/supabase';
 import { Customer, ItemType } from '@/lib/types';
 import { Select } from '@/components/ui/Select';
+import { createCustomer } from '@/lib/actions/customerActions';
+import { createSale } from '@/lib/actions/salesActions';
 
 interface SaleModalProps {
     isOpen: boolean;
@@ -109,18 +111,12 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
         let finalCustomerId = customerInput;
 
         if (isNewCustomer) {
-            const { data, error } = await supabase
-                .from('customers')
-                .insert({ name: customerInput.trim() })
-                .select()
-                .single();
-            
-            if (error) {
-                console.error("Error creating customer:", error);
-                alert("Could not create new customer. They might already exist.");
+            const res = await createCustomer(customerInput);
+            if (!res.success) {
+                alert(res.error);
                 return;
             }
-            finalCustomerId = data.id;
+            finalCustomerId = res.data.id;
         }
 
         let nextSaleId = 1000;
@@ -144,10 +140,9 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
             done: false
         }));
 
-        const { error: saleError } = await supabase.from('me_sales').insert(insertPayload);
-        if (saleError) {
-            console.error("Error saving sale:", saleError);
-            alert("Failed to save sale.");
+        const res = await createSale(insertPayload);
+        if (!res.success) {
+            alert(res.error);
             return;
         }
 

@@ -42,8 +42,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                                 <ShieldCheck size={20} />
                             </div>
                             <div className="flex flex-col">
-                                <span className="font-bold text-base tracking-wide text-foreground">SIMS <span className="text-accent">PRO</span></span>
-                                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">Enterprise</span>
+                                <span className="font-bold text-base tracking-wide text-foreground uppercase">ME <span className="text-accent">FLOW</span></span>
+                                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">Management</span>
                             </div>
                         </div>
                     </div>

@@ -5,6 +5,7 @@ import InventoryStatus from '@/components/dashboard/InventoryStatus';
 import LowStockAlerts from '@/components/dashboard/LowStockAlerts';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import DashboardActions from '@/components/dashboard/DashboardActions';
+import Link from 'next/link';
 import { getDashboardStats } from '@/lib/actions/dashboardActions';
 import { getRecentActivity } from '@/lib/actions/activityActions';
 
@@ -29,14 +30,14 @@ export default async function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
-                    <p className="text-gray-500 text-sm font-semibold tracking-wide uppercase mb-2">Total Sales</p>
+                <Link href="/sales" className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center hover:border-gray-300 transition-all cursor-pointer group">
+                    <p className="text-gray-500 text-sm font-semibold tracking-wide uppercase mb-2 group-hover:text-gray-900 transition-colors">Total Sales</p>
                     <h2 className="text-5xl font-bold tracking-tight text-gray-900">{stats.salesCount.toLocaleString()}</h2>
                     <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-4">
                         <span className="text-xs text-gray-500 font-medium">Updated just now</span>
                         <span className="px-2 py-1 bg-success-bg text-success text-xs font-bold rounded-lg">+12%</span>
                     </div>
-                </div>
+                </Link>
 
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
                     <TransactionSummary 
@@ -50,9 +51,9 @@ export default async function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                <Link href="/users" className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:border-gray-300 transition-all cursor-pointer block">
                     <RecentActivity activities={activities} />
-                </div>
+                </Link>
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                     <LowStockAlerts alerts={stats.inventory.lowStockItems} />
                 </div>

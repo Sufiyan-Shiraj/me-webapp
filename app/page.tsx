@@ -13,9 +13,9 @@ export default function Home() {
         </div>
 
         <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">SIMS Enterprise</h1>
-          <p className="mt-4 text-lg text-gray-500">
-            Secure Sales & Inventory Management System for modern enterprises.
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight text-center">ME Flow</h1>
+          <p className="mt-4 text-lg text-gray-500 text-center">
+            Secure Sales & Inventory Management Flow for modern businesses.
           </p>
         </div>
 
