@@ -9,6 +9,7 @@ import { X, Shield, Lock, Eye, EyeOff, Trash2, User, Check, Loader2, AlertCircle
 import { Role } from '@/lib/types';
 import { adminUpdateUser, adminChangePassword, deleteUser } from '@/app/actions/userActions';
 import clsx from 'clsx';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface UserModalProps {
     user: any;
@@ -38,8 +39,6 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
             setShowDeleteConfirm(false);
         }
     }, [user]);
-
-    if (!isOpen || !user) return null;
 
     const handleUpdateDetails = async () => {
         setIsLoading(true);
@@ -96,34 +95,49 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 animate-in fade-in duration-300">
-            <div className="relative w-full max-w-[400px] animate-in zoom-in-95 duration-300">
-                <Card className="bg-white overflow-hidden rounded-3xl border border-border shadow-xl">
-                    <CardHeader className="border-b border-border flex flex-col items-center py-8 space-y-4 bg-gray-50/50">
+        <AnimatePresence>
+        {isOpen && user && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={onClose}
+            />
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-[400px]"
+            >
+                <Card className="bg-surface overflow-hidden rounded-[2rem] border border-border/50 shadow-2xl">
+                    <CardHeader className="border-b border-border/50 flex flex-col items-center py-8 space-y-4 bg-foreground/[0.02]">
                         <div className="relative">
-                            <div className="h-20 w-20 rounded-full bg-gray-100 border border-border flex items-center justify-center text-foreground text-3xl font-black shadow-sm">
+                            <div className="h-20 w-20 rounded-full bg-foreground/[0.04] border border-border/50 flex items-center justify-center text-foreground text-3xl font-black shadow-sm">
                                 {user.username.charAt(0).toUpperCase()}
                             </div>
                             <div className={clsx(
-                                "absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-white flex items-center justify-center shadow-sm",
-                                user.role === 'admin' ? "bg-accent" : "bg-gray-400"
+                                "absolute -bottom-1 -right-1 h-6 w-6 rounded-full border-2 border-surface flex items-center justify-center shadow-sm",
+                                user.role === 'admin' ? "bg-accent" : "bg-foreground/40"
                             )}>
                                 {user.role === 'admin' ? <Shield size={12} className="text-white" /> : <User size={12} className="text-white" />}
                             </div>
                         </div>
                         <div className="text-center">
                             <h2 className="text-2xl font-black text-foreground leading-tight tracking-tight">{user.username}</h2>
-                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mt-1">{user.role} ACCESS</p>
+                            <p className="text-[10px] text-foreground/50 font-bold uppercase tracking-[0.2em] mt-1">{user.role} ACCESS</p>
                         </div>
                         <button 
                             onClick={onClose}
-                            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-foreground transition-all duration-200"
+                            className="absolute top-4 right-4 p-2 hover:bg-foreground/5 rounded-full text-foreground/40 hover:text-foreground transition-colors duration-200"
                         >
-                            <X size={20} />
+                            <X size={20} strokeWidth={2} />
                         </button>
                     </CardHeader>
 
-                    <CardBody className="py-6 px-8 space-y-8 bg-white">
+                    <CardBody className="py-6 px-8 space-y-8 bg-surface">
                         {status && (
                             <div className={clsx(
                                 "p-4 rounded-xl text-xs font-semibold border flex items-center gap-3 animate-in slide-in-from-top-2",
@@ -136,35 +150,35 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
 
                         {/* Password Section */}
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <h3 className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] flex items-center gap-2">
                                 <Lock size={12} className="text-accent" /> Security
                             </h3>
                             <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-gray-500 ml-1">Current Pass</label>
+                                        <label className="text-[10px] font-bold text-foreground/50 ml-1">Current Pass</label>
                                         <div className="relative">
                                             <Input 
                                                 type={showPassword ? "text" : "password"} 
                                                 value={user.password} 
                                                 readOnly 
-                                                className="bg-gray-50 border-border h-10 rounded-xl text-gray-600 text-xs font-mono tracking-widest px-4 shadow-none focus:ring-0"
+                                                className="bg-foreground/[0.02] border-border/50 h-10 rounded-xl text-foreground/60 text-xs font-mono tracking-widest px-4 shadow-none focus:ring-0"
                                             />
                                             <button 
                                                 onClick={() => setShowPassword(!showPassword)}
-                                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-accent transition-colors"
+                                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/40 hover:text-accent transition-colors"
                                             >
                                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-gray-500 ml-1">New Pass</label>
+                                        <label className="text-[10px] font-bold text-foreground/50 ml-1">New Pass</label>
                                         <Input 
                                             placeholder="Update..." 
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
-                                            className="bg-white border-border h-10 rounded-xl text-xs px-4 shadow-sm focus:border-accent/50 transition-all"
+                                            className="bg-surface border-border/50 h-10 rounded-xl text-xs px-4 shadow-sm focus:border-accent/50 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -172,7 +186,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                 {newPassword && (
                                     <div className="flex justify-center pt-2 animate-in slide-in-from-top-1">
                                         <button 
-                                            className="text-[10px] font-bold text-gray-500 hover:text-accent transition-all duration-200 flex items-center justify-center gap-2 tracking-[0.1em] py-2 w-full"
+                                            className="text-[10px] font-bold text-foreground/50 hover:text-accent transition-all duration-200 flex items-center justify-center gap-2 tracking-[0.1em] py-2 w-full"
                                             onClick={handleUpdatePassword}
                                             disabled={isLoading}
                                         >
@@ -187,12 +201,12 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
 
                         {/* Access Section */}
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <h3 className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em] flex items-center gap-2">
                                 <Shield size={12} className="text-accent" /> Permissions
                             </h3>
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-500 ml-1">Account Role</label>
+                                    <label className="text-[10px] font-bold text-foreground/50 ml-1">Account Role</label>
                                     <Select 
                                         value={role}
                                         onChange={(val) => setRole(val as Role)}
@@ -200,17 +214,17 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                             { value: 'staff', label: 'Staff Member' },
                                             { value: 'admin', label: 'System Administrator' }
                                         ]}
-                                        className="h-11 rounded-xl text-xs border-border bg-white"
+                                        className="h-11 rounded-xl text-xs border-border/50 bg-surface"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-gray-500 ml-1">Business Units</label>
+                                    <label className="text-[10px] font-bold text-foreground/50 ml-1">Business Units</label>
                                     <div className="grid grid-cols-2 gap-3">
                                         <button 
                                             onClick={() => setMeAccess(!meAccess)}
                                             className={clsx(
                                                 "flex items-center justify-between p-3.5 rounded-xl border transition-colors",
-                                                meAccess ? "bg-accent/10 border-accent/30 text-accent" : "bg-gray-50 border-border text-gray-500 hover:bg-gray-100"
+                                                meAccess ? "bg-accent/10 border-accent/30 text-accent" : "bg-foreground/[0.02] border-border/50 text-foreground/50 hover:bg-foreground/[0.05]"
                                             )}
                                         >
                                             <span className="text-xs font-bold">ME Ent.</span>
@@ -220,7 +234,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                             onClick={() => setMayfieldAccess(!mayfieldAccess)}
                                             className={clsx(
                                                 "flex items-center justify-between p-3.5 rounded-xl border transition-colors",
-                                                mayfieldAccess ? "bg-accent/10 border-accent/30 text-accent" : "bg-gray-50 border-border text-gray-500 hover:bg-gray-100"
+                                                mayfieldAccess ? "bg-accent/10 border-accent/30 text-accent" : "bg-foreground/[0.02] border-border/50 text-foreground/50 hover:bg-foreground/[0.05]"
                                             )}
                                         >
                                             <span className="text-xs font-bold">Mayfield</span>
@@ -232,7 +246,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                         </div>
                     </CardBody>
 
-                    <CardFooter className="bg-gray-50 p-8 flex flex-col gap-4 border-t border-border">
+                    <CardFooter className="bg-foreground/[0.02] p-8 flex flex-col gap-4 border-t border-border/50">
                         <Button 
                             className="w-full font-bold h-12 text-sm tracking-[0.05em]"
                             onClick={handleUpdateDetails}
@@ -244,7 +258,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                         <div className="w-full">
                             {!showDeleteConfirm ? (
                                 <button 
-                                    className="text-[10px] font-bold text-gray-500 hover:text-destructive w-full py-2 transition-colors duration-200 flex items-center justify-center gap-2 tracking-[0.1em]"
+                                    className="text-[10px] font-bold text-foreground/50 hover:text-destructive w-full py-2 transition-colors duration-200 flex items-center justify-center gap-2 tracking-[0.1em]"
                                     onClick={() => setShowDeleteConfirm(true)}
                                 >
                                     <Trash2 size={12} /> DELETE ACCOUNT
@@ -263,7 +277,7 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                                         </Button>
                                         <Button 
                                             variant="secondary"
-                                            className="flex-1 font-bold rounded-lg h-9 text-[11px] bg-white border-border text-gray-700 hover:bg-gray-50"
+                                            className="flex-1 font-bold rounded-lg h-9 text-[11px] bg-surface border-border text-foreground hover:bg-foreground/5"
                                             onClick={() => setShowDeleteConfirm(false)}
                                         >
                                             NO
@@ -274,7 +288,9 @@ export default function UserModal({ user, isOpen, onClose, onRefresh }: UserModa
                         </div>
                     </CardFooter>
                 </Card>
-            </div>
+            </motion.div>
         </div>
+        )}
+        </AnimatePresence>
     );
 }

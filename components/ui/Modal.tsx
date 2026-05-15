@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ModalProps {
     isOpen: boolean;
@@ -18,6 +19,11 @@ interface ModalProps {
 
 export function Modal({ isOpen, onClose, title, description, children, className, footer }: ModalProps) {
     const overlayRef = useRef<HTMLDivElement>(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -35,56 +41,69 @@ export function Modal({ isOpen, onClose, title, description, children, className
         };
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
+    if (!mounted) return null;
 
     return createPortal(
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-            role="dialog"
-            aria-modal="true"
-        >
-            {/* Backdrop */}
-            <div
-                ref={overlayRef}
-                className="absolute inset-0 bg-black/40 transition-opacity animate-in fade-in duration-200"
-                onClick={onClose}
-            />
-
-            {/* Modal Content */}
-            <div className={clsx(
-                "relative w-full max-w-lg transform rounded-3xl border border-gray-100 bg-white shadow-2xl transition-all animate-in fade-in zoom-in-95 duration-200",
-                "flex flex-col max-h-[90vh]",
-                className
-            )}>
-                {/* Header */}
-                <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100">
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-900 tracking-tight">{title}</h2>
-                        {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
+        <AnimatePresence>
+            {isOpen && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    {/* Backdrop */}
+                    <motion.div
+                        ref={overlayRef}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={onClose}
-                        className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full w-8 h-8 p-0 flex items-center justify-center"
+                    />
+
+                    {/* Modal Content */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className={clsx(
+                            "relative w-full max-w-lg transform rounded-[2rem] border border-border/50 bg-surface shadow-2xl flex flex-col max-h-[90vh]",
+                            className
+                        )}
                     >
-                        <X size={18} />
-                    </Button>
-                </div>
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-border/50">
+                            <div>
+                                <h2 className="text-xl font-semibold text-foreground tracking-tight">{title}</h2>
+                                {description && <p className="mt-1 text-sm text-foreground/60">{description}</p>}
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={onClose}
+                                className="text-foreground/40 hover:text-foreground hover:bg-foreground/5 rounded-full w-10 h-10 p-0 flex items-center justify-center transition-colors shrink-0 ml-4"
+                            >
+                                <X size={20} strokeWidth={2} />
+                            </Button>
+                        </div>
 
-                {/* Body */}
-                <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
-                    {children}
-                </div>
+                        {/* Body */}
+                        <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
+                            {children}
+                        </div>
 
-                {/* Footer */}
-                {footer && (
-                    <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-100 bg-gray-50/50 rounded-b-3xl">
-                        {footer}
-                    </div>
-                )}
-            </div>
-        </div>,
+                        {/* Footer */}
+                        {footer && (
+                            <div className="flex items-center justify-end gap-3 p-4 sm:p-6 border-t border-border/50 bg-foreground/[0.02] rounded-b-[2rem]">
+                                {footer}
+                            </div>
+                        )}
+                    </motion.div>
+                </div>
+            )}
+        </AnimatePresence>,
         document.body
     );
 }

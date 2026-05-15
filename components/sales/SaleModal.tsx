@@ -11,6 +11,7 @@ import { Customer, ItemType } from '@/lib/types';
 import { Select } from '@/components/ui/Select';
 import { createCustomer } from '@/lib/actions/customerActions';
 import { createSale } from '@/lib/actions/salesActions';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SaleModalProps {
     isOpen: boolean;
@@ -32,6 +33,8 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
     const [inventory, setInventory] = useState<any[]>([]);
     const [rows, setRows] = useState<SaleItemRow[]>([{ id: '1', itemTypeId: '', quantity: 0 }]);
     const [isFetching, setIsFetching] = useState(false);
+    const [showOverview, setShowOverview] = useState(false);
+    const scrollRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -82,6 +85,11 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
 
     const handleAddRow = () => {
         setRows(prev => [...prev, { id: Math.random().toString(), itemTypeId: '', quantity: 0 }]);
+        setTimeout(() => {
+            if (scrollRef.current) {
+                scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+            }
+        }, 100);
     };
 
     const handleRemoveRow = (id: string) => {
@@ -159,7 +167,18 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
             footer={
                 <>
                     <Button variant="ghost" onClick={onClose}>Cancel</Button>
-                    <Button onClick={handleSubmit} disabled={isFetching}>Record Sale</Button>
+                    {!showOverview ? (
+                        <Button 
+                            variant="secondary" 
+                            onClick={() => setShowOverview(true)} 
+                            disabled={isFetching || rows.filter(r => r.itemTypeId && r.quantity > 0).length === 0}
+                            className="bg-accent/10 text-accent hover:bg-accent/20"
+                        >
+                            Review Details
+                        </Button>
+                    ) : (
+                        <Button onClick={handleSubmit} disabled={isFetching}>Confirm Sale</Button>
+                    )}
                 </>
             }
         >
@@ -167,21 +186,21 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                 <div className="flex justify-center py-10">
                     <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
                 </div>
-            ) : (
+            ) : !showOverview ? (
                 <form onSubmit={handleSubmit} className="space-y-6">
                     
                     {/* Customer Selection */}
-                    <div className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                            <User size={16} /> Customer Information
+                    <div className="space-y-3 bg-foreground/[0.02] p-4 rounded-2xl border border-border/50">
+                        <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider flex items-center gap-2">
+                            <User size={14} /> Customer Information
                         </label>
 
-                        <div className="flex bg-gray-100/50 p-1 rounded-xl border border-gray-100 mb-2">
+                        <div className="relative flex bg-foreground/[0.04] p-1 rounded-xl border border-border/50 mb-2">
                             <button
                                 type="button"
                                 onClick={() => { setIsNewCustomer(false); setCustomerInput(''); }}
-                                className={clsx("flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
-                                    !isNewCustomer ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                                className={clsx("relative z-10 flex-1 py-1.5 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2",
+                                    !isNewCustomer ? "text-white" : "text-foreground/50 hover:text-foreground hover:bg-foreground/5"
                                 )}
                             >
                                 <User size={16} /> Existing
@@ -189,54 +208,82 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                             <button
                                 type="button"
                                 onClick={() => { setIsNewCustomer(true); setCustomerInput(''); }}
-                                className={clsx("flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2",
-                                    isNewCustomer ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                                className={clsx("relative z-10 flex-1 py-1.5 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2",
+                                    isNewCustomer ? "text-white" : "text-foreground/50 hover:text-foreground hover:bg-foreground/5"
                                 )}
                             >
                                 <UserPlus size={16} /> New Customer
                             </button>
+                            <motion.div
+                                className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-accent rounded-lg shadow-md shadow-accent/20 z-0"
+                                initial={false}
+                                animate={{ x: isNewCustomer ? '100%' : '0%' }}
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            />
                         </div>
 
-                        {isNewCustomer ? (
-                            <Input 
-                                placeholder="Enter full customer name" 
-                                value={customerInput} 
-                                onChange={(e) => setCustomerInput(e.target.value)} 
-                                required 
-                                autoFocus
-                            />
-                        ) : (
-                            <Select
-                                options={customers.map(c => ({ value: c.id, label: c.name }))}
-                                value={customerInput}
-                                onChange={setCustomerInput}
-                                placeholder="Select a customer..."
-                            />
-                        )}
+                        <AnimatePresence mode="popLayout">
+                            <motion.div
+                                key={isNewCustomer ? 'new' : 'existing'}
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -10 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                            >
+                                {isNewCustomer ? (
+                                    <Input 
+                                        placeholder="Enter full customer name" 
+                                        value={customerInput} 
+                                        onChange={(e) => setCustomerInput(e.target.value)} 
+                                        required 
+                                        autoFocus
+                                    />
+                                ) : (
+                                    <Select
+                                        options={customers.map(c => ({ value: c.id, label: c.name }))}
+                                        value={customerInput}
+                                        onChange={setCustomerInput}
+                                        placeholder="Select a customer..."
+                                    />
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
 
                     {/* Items Section */}
                     <div className="space-y-3">
                         <div className="flex items-center justify-between px-1">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                                <Layers size={16} /> Sale Items
+                            <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider flex items-center gap-2">
+                                <Layers size={14} /> Sale Items
                             </label>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleAddRow}
-                                className="text-xs font-bold text-gray-900 hover:text-black hover:bg-gray-100 px-2 h-8"
+                                className="text-xs font-bold text-foreground hover:text-foreground hover:bg-foreground/10 px-2 h-8 rounded-lg"
                             >
                                 <Plus size={14} className="mr-1" /> Add Item
                             </Button>
                         </div>
 
-                        <div className="space-y-2">
-                            {rows.map((row, index) => (
-                                <div key={row.id} className="flex items-end gap-2 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                        <div 
+                            ref={scrollRef} 
+                            className="space-y-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar relative"
+                        >
+                            <AnimatePresence mode="popLayout" initial={false}>
+                                {rows.map((row, index) => (
+                                    <motion.div 
+                                        key={row.id}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, padding: 0, overflow: 'hidden' }}
+                                        transition={{ duration: 0.2, type: "spring", bounce: 0 }}
+                                        className="flex items-end gap-2 bg-foreground/[0.02] p-3 rounded-xl border border-border/50"
+                                    >
                                     <div className="flex-1 space-y-1">
-                                        {index === 0 && <label className="text-[10px] uppercase font-bold text-gray-500">Product & Variant</label>}
+                                        {index === 0 && <label className="text-[10px] uppercase font-bold text-foreground/50 tracking-wider">Product & Variant</label>}
                                         <Select
                                             options={inventory.flatMap(group => 
                                                 group.types.map((type: any) => ({
@@ -250,7 +297,7 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                                         />
                                     </div>
                                     <div className="w-24 space-y-1">
-                                        {index === 0 && <label className="text-[10px] uppercase font-bold text-gray-500">Qty</label>}
+                                        {index === 0 && <label className="text-[10px] uppercase font-bold text-foreground/50 tracking-wider">Qty</label>}
                                         <Input
                                             type="number"
                                             placeholder="0"
@@ -266,16 +313,58 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                                         variant="ghost"
                                         onClick={() => handleRemoveRow(row.id)}
                                         disabled={rows.length === 1}
-                                        className="px-2 text-gray-400 hover:text-destructive hover:bg-destructive-bg disabled:opacity-30"
+                                        className="px-2 text-foreground/40 hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 rounded-lg"
                                         title="Remove item"
                                     >
                                         <Trash2 size={18} />
                                     </Button>
-                                </div>
-                            ))}
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </form>
+            ) : (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between pb-4 border-b border-border/50">
+                        <h3 className="text-sm font-semibold tracking-wide text-foreground uppercase">Order Summary</h3>
+                        <Button variant="ghost" size="sm" onClick={() => setShowOverview(false)} className="h-8 px-2 text-xs">
+                            Edit
+                        </Button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <div className="bg-foreground/[0.02] p-4 rounded-xl border border-border/50">
+                            <p className="text-xs text-foreground/50 uppercase font-bold tracking-wider mb-1">Customer</p>
+                            <p className="font-medium">{isNewCustomer ? customerInput : (customers.find(c => c.id === customerInput)?.name || 'Unknown')}</p>
+                        </div>
+
+                        <div className="bg-foreground/[0.02] p-4 rounded-xl border border-border/50">
+                            <p className="text-xs text-foreground/50 uppercase font-bold tracking-wider mb-3">Items ({rows.filter(r => r.itemTypeId && r.quantity > 0).length})</p>
+                            <div className="space-y-3 max-h-[30vh] overflow-y-auto custom-scrollbar pr-2">
+                                {rows.filter(r => r.itemTypeId && r.quantity > 0).map(row => {
+                                    let fullItemName = 'Unknown Item';
+                                    inventory.forEach(g => {
+                                        const foundType = g.types.find((t: any) => t.id === row.itemTypeId);
+                                        if (foundType) {
+                                            fullItemName = `${g.itemName} - ${foundType.variantName}`;
+                                        }
+                                    });
+                                    return (
+                                        <div key={row.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0 last:pb-0">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-sm">{fullItemName}</span>
+                                            </div>
+                                            <div className="font-mono text-sm px-2 py-1 bg-accent/10 text-accent rounded-lg">
+                                                {row.quantity}x
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </Modal>
     );

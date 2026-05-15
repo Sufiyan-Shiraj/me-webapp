@@ -11,7 +11,9 @@ import { SaleInvoice, InvoiceItem, ItemStatus } from '@/lib/types';
 import clsx from 'clsx';
 import styles from '@/components/ui/ui.module.css';
 import { SaleModal } from '@/components/sales/SaleModal';
-import { motion } from 'framer-motion';
+import { SalesExportPreviewModal } from '@/components/sales/SalesExportPreviewModal';
+import { Select } from '@/components/ui/Select';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { supabase } from '@/lib/supabase';
 import { updateSaleItem } from '@/lib/actions/salesActions';
@@ -81,75 +83,84 @@ const SaleRow = ({ sale, onUpdateItem }: SaleRowProps) => {
             </TableRow>
 
             {/* Expandable Items Row */}
-            {isOpen && (
-                <TableRow className="bg-gray-50 border-l-2 border-accent border-b-0 hover:bg-gray-50">
-                    <TableCell colSpan={5} className="p-0">
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            className="p-4 sm:p-6"
-                        >
-                            <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-                                <div className="grid grid-cols-5 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-100 p-4 bg-gray-50">
-                                    <div className="col-span-2">Item / Variant</div>
-                                    <div className="col-span-2 text-center">Fulfillment</div>
-                                    <div className="text-center">Action</div>
-                                </div>
-                                <div className="divide-y divide-gray-100">
-                                    {sale.items.map((item) => {
-                                        const status = getItemStatus(item);
-                                        return (
-                                            <div key={item.id} className="grid grid-cols-5 gap-4 items-center p-4 hover:bg-gray-50 transition-colors">
-                                                <div className="col-span-2 flex flex-col">
-                                                    <span className="text-sm font-medium text-foreground">{item.product_name}</span>
-                                                    <span className="text-xs text-gray-500 mt-0.5">{item.variant}</span>
-                                                    <span className="mt-1">
-                                                        <span className={clsx(styles.badge, getStatusBadgeClass(status), 'text-[10px] py-0 px-2 uppercase')}>
-                                                            {status}
-                                                        </span>
-                                                    </span>
-                                                </div>
-                                                <div className="col-span-2 flex justify-center">
-                                                    <div className="flex items-center gap-4 bg-gray-50 rounded-lg p-2 border border-gray-100">
-                                                        <div className="text-center">
-                                                            <div className="text-[10px] text-gray-500 uppercase font-bold">Total</div>
-                                                            <div className="text-sm text-foreground font-mono font-medium">{item.quantity}</div>
+            <AnimatePresence>
+                {isOpen && (
+                    <TableRow className="bg-accent/[0.02] border-l-2 border-accent border-b-0 hover:bg-accent/[0.02]">
+                        <TableCell colSpan={5} className="p-0 border-b-0">
+                            <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                className="overflow-hidden"
+                            >
+                                <div className="p-6 md:px-12 py-6">
+                                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                                        <div className="grid grid-cols-12 gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 p-4 bg-gray-50/50">
+                                            <div className="col-span-5">Item / Variant</div>
+                                            <div className="col-span-4 text-center">Fulfillment</div>
+                                            <div className="col-span-3 text-right">Action</div>
+                                        </div>
+                                        <div className="divide-y divide-gray-50 max-h-[40vh] overflow-y-auto custom-scrollbar">
+                                            {sale.items.map((item) => {
+                                                const status = getItemStatus(item);
+                                                return (
+                                                    <div key={item.id} className="grid grid-cols-12 gap-4 items-center p-4 hover:bg-gray-50/30 transition-colors">
+                                                        <div className="col-span-5 flex flex-col">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-sm font-semibold text-gray-900">{item.product_name}</span>
+                                                                <span className={clsx(styles.badge, getStatusBadgeClass(status), 'text-[9px] py-0.5 px-2 uppercase shadow-sm tracking-wider')}>
+                                                                    {status}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-xs text-gray-500 font-medium mt-1">{item.variant}</span>
                                                         </div>
-                                                        <div className="w-px h-6 bg-gray-200"></div>
-                                                        <div className="text-center flex flex-col items-center">
-                                                            <div className="text-[10px] text-gray-500 uppercase font-bold mb-1">Pending</div>
-                                                            <Input
-                                                                type="number"
-                                                                value={item.pending.toString()}
-                                                                onChange={(e) => {
-                                                                    const val = Math.max(0, Math.min(item.quantity, Number(e.target.value)));
-                                                                    onUpdateItem?.(item.id, { pending: val, done: val === 0 });
-                                                                }}
-                                                                className="w-16 h-8 p-1 text-center font-mono text-sm shadow-inner"
-                                                            />
+                                                        <div className="col-span-4 flex justify-center items-center gap-8">
+                                                            <div className="flex flex-col items-center w-16">
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total</span>
+                                                                <span className="text-sm font-mono font-bold text-gray-900">{item.quantity}</span>
+                                                            </div>
+                                                            <div className="w-px h-8 bg-gray-200"></div>
+                                                            <div className="flex flex-col items-center w-16">
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pending</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    max={item.quantity}
+                                                                    value={item.pending.toString()}
+                                                                    onChange={(e) => {
+                                                                        const val = Math.max(0, Math.min(item.quantity, Number(e.target.value)));
+                                                                        onUpdateItem?.(item.id, { pending: val, done: val === 0 });
+                                                                    }}
+                                                                    className="w-16 h-8 p-1 text-center font-mono text-sm font-semibold bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-accent/20 focus:border-accent outline-none transition-all"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="col-span-3 flex justify-end items-center">
+                                                            <Button
+                                                                size="sm"
+                                                                variant={item.done ? "ghost" : "primary"}
+                                                                disabled={item.done}
+                                                                className={clsx(
+                                                                    "h-9 text-xs font-bold px-4 rounded-xl transition-all", 
+                                                                    item.done ? "text-success bg-success/10 opacity-70" : "shadow-md shadow-gray-900/10"
+                                                                )}
+                                                                onClick={() => onUpdateItem?.(item.id, { pending: 0, done: true })}
+                                                            >
+                                                                {item.done ? 'Finished' : 'Mark Done'}
+                                                            </Button>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div className="text-center flex justify-center items-center">
-                                                    <Button
-                                                        size="sm"
-                                                        variant={item.done ? "ghost" : "primary"}
-                                                        disabled={item.done}
-                                                        className={clsx("h-8 text-xs font-semibold px-3", item.done && "text-success bg-success-bg")}
-                                                        onClick={() => onUpdateItem?.(item.id, { pending: 0, done: true })}
-                                                    >
-                                                        {item.done ? 'Finished' : 'Mark Done'}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    </TableCell>
-                </TableRow>
-            )}
+                            </motion.div>
+                        </TableCell>
+                    </TableRow>
+                )}
+            </AnimatePresence>
         </>
     );
 };
@@ -161,6 +172,7 @@ export default function SalesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     
     // Advanced Filters State
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -383,35 +395,38 @@ export default function SalesPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Sales Transactions</h1>
                     <p className="text-sm text-gray-500 mt-1">Manage and track your customer orders.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="secondary" className="h-11" icon={Download} onClick={handleExport}>
-                        Export CSV
-                    </Button>
-                    <Button variant="primary" className="h-11" icon={Plus} onClick={() => setIsModalOpen(true)}>
-                        New Sale
-                    </Button>
-                </div>
             </div>
 
             <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between gap-4 p-6 rounded-3xl bg-white border border-gray-100 shadow-sm">
-                    <div className="relative w-full sm:w-96 group">
-                        <Input
-                            placeholder="Search customer or sale ID..."
-                            className="pl-10 h-11 bg-gray-50 border-gray-200 rounded-xl focus:ring-gray-900 focus:border-gray-900"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors" size={18} />
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 rounded-3xl bg-white border border-gray-100 shadow-sm">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-80 group">
+                            <Input
+                                placeholder="Search customer or sale ID..."
+                                className="pl-10 h-11 bg-gray-50 border-gray-200 rounded-xl focus:ring-gray-900 focus:border-gray-900 transition-all"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors" size={18} />
+                        </div>
+                        <Button 
+                            variant="secondary" 
+                            icon={isFilterOpen ? X : Filter} 
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            className={clsx("h-11 px-5 rounded-xl transition-all whitespace-nowrap border-gray-200 font-semibold", isFilterOpen && "bg-gray-900 text-white hover:bg-black border-transparent")}
+                        >
+                            {isFilterOpen ? "Close Filters" : "Filters"}
+                        </Button>
                     </div>
-                    <Button 
-                        variant="secondary" 
-                        icon={isFilterOpen ? X : Filter} 
-                        onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className={clsx("h-11 px-6 rounded-xl", isFilterOpen && "bg-gray-900 text-white hover:bg-black")}
-                    >
-                        {isFilterOpen ? "Close Filters" : "Filters"}
-                    </Button>
+                    
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                        <Button variant="secondary" className="h-11 rounded-xl px-5 border-gray-200 font-semibold" icon={Download} onClick={() => setIsExportModalOpen(true)}>
+                            Export CSV
+                        </Button>
+                        <Button variant="primary" className="h-11 rounded-xl px-5 font-semibold" icon={Plus} onClick={() => setIsModalOpen(true)}>
+                            New Sale
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Filter Panel */}
@@ -425,66 +440,65 @@ export default function SalesPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Search size={12} /> Customer
                             </label>
-                            <select 
+                            <Select 
                                 value={filters.customer}
-                                onChange={(e) => setFilters(f => ({ ...f, customer: e.target.value }))}
-                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all"
-                            >
-                                <option value="all">All Customers</option>
-                                {filterOptions.customers.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
+                                onChange={(val) => setFilters(f => ({ ...f, customer: val as string }))}
+                                options={[
+                                    { value: 'all', label: 'All Customers' },
+                                    ...filterOptions.customers.map(c => ({ value: c, label: c }))
+                                ]}
+                            />
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Plus size={12} /> Product
                             </label>
-                            <select 
+                            <Select 
                                 value={filters.item}
-                                onChange={(e) => setFilters(f => ({ ...f, item: e.target.value, variant: 'all' }))}
-                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all"
-                            >
-                                <option value="all">All Products</option>
-                                {filterOptions.items.map(i => <option key={i} value={i}>{i}</option>)}
-                            </select>
+                                onChange={(val) => setFilters(f => ({ ...f, item: val as string, variant: 'all' }))}
+                                options={[
+                                    { value: 'all', label: 'All Products' },
+                                    ...filterOptions.items.map(i => ({ value: i, label: i }))
+                                ]}
+                            />
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <ChevronDown size={12} /> Variant
                             </label>
-                            <select 
+                            <Select 
                                 value={filters.variant}
-                                onChange={(e) => setFilters(f => ({ ...f, variant: e.target.value }))}
+                                onChange={(val) => setFilters(f => ({ ...f, variant: val as string }))}
                                 disabled={filters.item === 'all'}
-                                className="w-full h-10 px-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all disabled:opacity-50"
-                            >
-                                <option value="all">All Variants</option>
-                                {filters.item !== 'all' && filterOptions.variants.get(filters.item) && 
-                                    Array.from(filterOptions.variants.get(filters.item)!).sort().map(v => (
-                                        <option key={v} value={v}>{v}</option>
-                                    ))
-                                }
-                            </select>
+                                options={[
+                                    { value: 'all', label: 'All Variants' },
+                                    ...(filters.item !== 'all' && filterOptions.variants.get(filters.item) ? 
+                                        Array.from(filterOptions.variants.get(filters.item)!).sort().map(v => ({ value: v, label: v })) : 
+                                        []
+                                    )
+                                ]}
+                            />
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Hash size={12} /> Quantity Range
                             </label>
-                            <div className="flex items-center gap-2">
-                                <Input 
+                            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-gray-900 transition-all h-10 px-1">
+                                <input 
                                     type="number" 
                                     placeholder="Min" 
-                                    className="h-10 text-xs"
+                                    className="w-full h-full bg-transparent text-sm px-2 outline-none text-center"
                                     value={filters.minQty}
                                     onChange={(e) => setFilters(f => ({ ...f, minQty: e.target.value }))}
                                 />
-                                <span className="text-gray-300">-</span>
-                                <Input 
+                                <span className="text-gray-300 font-medium">-</span>
+                                <input 
                                     type="number" 
                                     placeholder="Max" 
-                                    className="h-10 text-xs"
+                                    className="w-full h-full bg-transparent text-sm px-2 outline-none text-center"
                                     value={filters.maxQty}
                                     onChange={(e) => setFilters(f => ({ ...f, maxQty: e.target.value }))}
                                 />
@@ -495,24 +509,25 @@ export default function SalesPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Calendar size={12} /> Date Range
                             </label>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="relative group">
-                                    <Input 
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1 relative group">
+                                    <input 
                                         type="date" 
-                                        className="h-10 pl-9 text-xs"
+                                        className="w-full h-10 px-3 pl-9 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full"
                                         value={filters.startDate}
                                         onChange={(e) => setFilters(f => ({ ...f, startDate: e.target.value }))}
                                     />
-                                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 </div>
-                                <div className="relative group">
-                                    <Input 
+                                <span className="text-gray-300 font-medium text-sm">to</span>
+                                <div className="flex-1 relative group">
+                                    <input 
                                         type="date" 
-                                        className="h-10 pl-9 text-xs"
+                                        className="w-full h-10 px-3 pl-9 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full"
                                         value={filters.endDate}
                                         onChange={(e) => setFilters(f => ({ ...f, endDate: e.target.value }))}
                                     />
-                                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                 </div>
                             </div>
                         </div>
@@ -520,7 +535,8 @@ export default function SalesPage() {
                         <div className="lg:col-span-2 flex items-end justify-end gap-3">
                             <Button 
                                 variant="ghost" 
-                                size="sm" 
+                                size="sm"
+                                className="h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100/80 rounded-xl"
                                 onClick={() => setFilters({
                                     customer: 'all',
                                     item: 'all',
@@ -530,9 +546,8 @@ export default function SalesPage() {
                                     startDate: '',
                                     endDate: ''
                                 })}
-                                className="text-[10px] font-bold uppercase tracking-wider"
                             >
-                                Reset All
+                                Reset All Filters
                             </Button>
                         </div>
                     </motion.div>
@@ -594,6 +609,12 @@ export default function SalesPage() {
             )}
 
             <SaleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewSale} />
+            
+            <SalesExportPreviewModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                data={filteredData}
+            />
         </div>
     );
 }
