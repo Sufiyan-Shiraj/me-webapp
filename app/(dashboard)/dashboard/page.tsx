@@ -1,5 +1,8 @@
 import React from 'react';
 import type { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+
 import TransactionSummary from '@/components/dashboard/SalesSummary';
 import InventoryStatus from '@/components/dashboard/InventoryStatus';
 import LowStockAlerts from '@/components/dashboard/LowStockAlerts';
