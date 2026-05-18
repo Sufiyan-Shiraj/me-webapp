@@ -120,6 +120,7 @@ export function Select({ options, value, onChange, className, placeholder = "Sel
                         top: `${coords.top}px`, 
                         left: `${coords.left}px`, 
                         width: `${coords.width}px`,
+                        minWidth: '240px',
                         transform: coords.renderUpwards ? 'translateY(calc(-100% - 8px))' : 'translateY(4px)'
                     }}
                 >

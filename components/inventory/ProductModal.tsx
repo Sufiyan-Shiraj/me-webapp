@@ -16,7 +16,7 @@ interface ProductGroup {
 interface ProductModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (item: { item: string; variants: { type: string; quantity: number; unit: string }[] }) => void;
+    onSubmit: (item: { id?: string; item: string; variants: { id?: string; type: string; quantity: number; unit: string }[] }) => void;
     initialData?: InventoryItem;
     groups?: ProductGroup[];
 }
@@ -25,24 +25,35 @@ type ItemMode = 'new' | 'existing';
 type TypeMode = 'new' | 'existing';
 
 interface VariantRow {
-    id: string;
+    id: string; // Database uuid if existing, or random string if new
     typeMode: TypeMode;
-    selectedType: string;
-    newType: string;
+    name: string; // Editable variant name
     quantity: string;
     unit: string;
+    isCustomUnit?: boolean; // New flag to toggle custom unit text input
 }
 
 export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: ProductModalProps) {
     const [itemMode, setItemMode] = useState<ItemMode>('new');
     const [selectedGroup, setSelectedGroup] = useState('');
     const [newItemName, setNewItemName] = useState('');
+    const [editedItemName, setEditedItemName] = useState('');
 
     const [variantRows, setVariantRows] = useState<VariantRow[]>([
-        { id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '0', unit: 'kg' }
+        { id: '1', typeMode: 'new', name: '', quantity: '0', unit: 'kg' }
     ]);
     const [showOverview, setShowOverview] = useState(false);
     const scrollRef = React.useRef<HTMLDivElement>(null);
+
+    // Filter to only active groups and active variants
+    const activeGroups = React.useMemo(() => {
+        return groups
+            .map(g => ({
+                name: g.name,
+                variants: g.variants.filter(v => !v.is_archived && !v.item_is_archived)
+            }))
+            .filter(g => g.variants.length > 0);
+    }, [groups]);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -50,20 +61,57 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             setItemMode('new');
             setSelectedGroup('');
             setNewItemName('');
-            setVariantRows([{ id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '0', unit: 'kg' }]);
+            setEditedItemName('');
+            setVariantRows([{ id: '1', typeMode: 'new', name: '', quantity: '0', unit: 'kg' }]);
             setShowOverview(false);
         }
     }, [isOpen]);
 
+    // Sync selectedGroup with editedItemName
+    useEffect(() => {
+        if (selectedGroup) {
+            setEditedItemName(selectedGroup);
+        } else {
+            setEditedItemName('');
+        }
+    }, [selectedGroup]);
+
+    // Auto-fill variants when an existing product is selected
+    useEffect(() => {
+        if (itemMode === 'existing' && selectedGroup) {
+            const groupData = activeGroups.find(g => g.name === selectedGroup);
+            if (groupData && groupData.variants.length > 0) {
+                const standardUnits = ['kg', 'g', 'pcs', 'Nos', 'ltr', 'mtr'];
+                const filledRows = groupData.variants.map(v => {
+                    const unitVal = v.unit || 'kg';
+                    const isCustom = !standardUnits.includes(unitVal);
+                    return {
+                        id: v.id || Math.random().toString(36).substr(2, 9),
+                        typeMode: 'existing' as TypeMode,
+                        name: v.type || 'Standard',
+                        quantity: v.quantity.toString(),
+                        unit: unitVal,
+                        isCustomUnit: isCustom
+                    };
+                });
+                setVariantRows(filledRows);
+            } else {
+                setVariantRows([{ id: Math.random().toString(36).substr(2, 9), typeMode: 'existing', name: '', quantity: '0', unit: 'kg' }]);
+            }
+        }
+    }, [selectedGroup, itemMode, activeGroups]);
+
     // Handle Item Mode Change
     const handleItemModeChange = (mode: ItemMode) => {
         setItemMode(mode);
-        // If switching to new, reset selected group
-        // If switching to existing, ensure rows are compatible (e.g. might default to existing type mode)
-        setVariantRows(prev => prev.map(row => ({
-            ...row,
-            typeMode: mode === 'new' ? 'new' : 'existing' // Force new type if item is new
-        })));
+        if (mode === 'new') {
+            setSelectedGroup('');
+            setNewItemName('');
+            setEditedItemName('');
+            setVariantRows([{ id: '1', typeMode: 'new', name: '', quantity: '0', unit: 'kg' }]);
+        } else {
+            setVariantRows([{ id: '1', typeMode: 'existing', name: '', quantity: '0', unit: 'kg' }]);
+        }
     };
 
     const addVariantRow = () => {
@@ -71,9 +119,8 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             ...prev,
             {
                 id: Math.random().toString(36).substr(2, 9),
-                typeMode: itemMode === 'new' ? 'new' : 'existing',
-                selectedType: '',
-                newType: '',
+                typeMode: 'new',
+                name: '',
                 quantity: '0',
                 unit: 'kg'
             }
@@ -93,7 +140,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
     };
 
     // Update row data
-    const updateRow = (id: string, field: keyof VariantRow, value: string) => {
+    const updateRow = (id: string, field: keyof VariantRow, value: any) => {
         setVariantRows(prev => prev.map(row =>
             row.id === id ? { ...row, [field]: value } : row
         ));
@@ -102,24 +149,22 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const itemName = itemMode === 'new' ? newItemName : selectedGroup;
-        if (!itemName) {
+        const itemName = itemMode === 'new' ? newItemName : editedItemName;
+        if (!itemName || itemName.trim() === '') {
             alert("Please enter or select a product name.");
             return;
         }
 
         // Validate rows
-        const validVariants: { type: string; quantity: number; unit: string }[] = [];
+        const validVariants: { id?: string; type: string; quantity: number; unit: string }[] = [];
         for (const row of variantRows) {
-            const type = row.typeMode === 'new' ? row.newType : row.selectedType;
+            const type = row.name;
             const quantity = Number(row.quantity);
             const unit = row.unit || 'kg';
 
-            // Allow empty type (Standard) if user intended, but generally enforce input if "New Type" is selected and typed
-            // If type is empty, we can default to 'Standard' or null in backend handling, but let's pass it as is.
-
             if (quantity >= 0 && row.quantity !== '') {
                 validVariants.push({
+                    id: row.typeMode === 'existing' ? row.id : undefined,
                     type: type || 'Standard',
                     quantity,
                     unit
@@ -132,18 +177,23 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             return;
         }
 
+        const itemId = itemMode === 'existing'
+            ? activeGroups.find(g => g.name === selectedGroup)?.variants[0]?.item_id
+            : undefined;
+
         onSubmit({
+            id: itemId,
             item: itemName,
             variants: validVariants
         });
         onClose();
     };
 
-    const existingGroupData = groups.find(g => g.name === selectedGroup);
+    const existingGroupData = activeGroups.find(g => g.name === selectedGroup);
 
-    const isItemNameValid = itemMode === 'new' ? newItemName.trim() !== '' : selectedGroup !== '';
+    const isItemNameValid = itemMode === 'new' ? newItemName.trim() !== '' : editedItemName.trim() !== '';
     const isVariantsValid = variantRows.length > 0 && variantRows.every(r => 
-        (r.typeMode === 'new' ? r.newType.trim() !== '' : r.selectedType !== '') && 
+        r.name.trim() !== '' && 
         r.quantity !== '' && 
         Number(r.quantity) >= 0
     );
@@ -225,12 +275,27 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                     autoFocus
                                 />
                             ) : (
-                                <Select
-                                    options={groups.map(g => ({ value: g.name, label: g.name }))}
-                                    value={selectedGroup}
-                                    onChange={setSelectedGroup}
-                                    placeholder="Select a product..."
-                                />
+                                <div className="space-y-2">
+                                    <Select
+                                        options={activeGroups.map(g => ({ value: g.name, label: g.name }))}
+                                        value={selectedGroup}
+                                        onChange={setSelectedGroup}
+                                        placeholder="Select a product..."
+                                    />
+                                    {selectedGroup && (
+                                        <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                            <label className="text-[10px] font-bold text-foreground/40 uppercase tracking-wider">
+                                                Rename Product
+                                            </label>
+                                            <Input
+                                                placeholder="Rename Product..."
+                                                value={editedItemName}
+                                                onChange={(e) => setEditedItemName(e.target.value)}
+                                                className="font-medium"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             )}
                         </motion.div>
                     </AnimatePresence>
@@ -269,91 +334,87 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                     className="flex items-end gap-2 bg-foreground/[0.02] p-3 rounded-xl border border-border/50"
                                 >
                                     {/* Type Selection */}
-                                <div className="flex-1 space-y-1">
-                                    {itemMode === 'existing' && existingGroupData && (
-                                        <div className="relative flex bg-foreground/[0.04] p-0.5 rounded-lg border border-border/50 mb-1 w-fit">
-                                            <button
-                                                type="button"
-                                                onClick={() => updateRow(row.id, 'typeMode', 'existing')}
-                                                className={clsx("relative z-10 text-[10px] uppercase font-bold px-3 py-1 rounded-md transition-colors tracking-wider",
-                                                    row.typeMode === 'existing' ? "text-white" : "text-foreground/50 hover:text-foreground"
-                                                )}
-                                            >
-                                                Existing
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => updateRow(row.id, 'typeMode', 'new')}
-                                                className={clsx("relative z-10 text-[10px] uppercase font-bold px-3 py-1 rounded-md transition-colors tracking-wider",
-                                                    row.typeMode === 'new' ? "text-white" : "text-foreground/50 hover:text-foreground"
-                                                )}
-                                            >
-                                                New Type
-                                            </button>
-                                            <motion.div
-                                                className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] bg-accent rounded-md shadow-sm z-0"
-                                                initial={false}
-                                                animate={{ x: row.typeMode === 'new' ? '100%' : '0%' }}
-                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {row.typeMode === 'existing' && itemMode === 'existing' ? (
-                                        <Select
-                                            options={existingGroupData?.variants.map(v => ({ value: v.type || '', label: v.type || 'Standard' })) || []}
-                                            value={row.selectedType}
-                                            onChange={(val) => updateRow(row.id, 'selectedType', val)}
-                                            placeholder="Select Type..."
-                                        />
-                                    ) : (
+                                    <div className="flex-1 space-y-1">
+                                        {index === 0 && <label className="block text-[10px] text-foreground/50 uppercase font-bold tracking-wider">Variant Type</label>}
                                         <Input
                                             placeholder="Type (e.g. Natural)"
-                                            value={row.newType}
-                                            onChange={(e) => updateRow(row.id, 'newType', e.target.value)}
+                                            value={row.name}
+                                            onChange={(e) => updateRow(row.id, 'name', e.target.value)}
+                                            className="h-10 font-medium"
                                         />
-                                    )}
-                                </div>
+                                    </div>
 
-                                <div className="w-24 space-y-1">
-                                    {index === 0 && <label className="block text-[10px] text-foreground/50 uppercase font-bold tracking-wider">Qty</label>}
-                                    <Input
-                                        type="number"
-                                        placeholder="0"
-                                        value={row.quantity}
-                                        onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
-                                        className="text-right font-mono"
-                                        min="0"
-                                    />
-                                </div>
+                                    <div className="w-24 space-y-1">
+                                        {index === 0 && <label className="block text-[10px] text-foreground/50 uppercase font-bold tracking-wider">Qty</label>}
+                                        <Input
+                                            type="number"
+                                            placeholder="0"
+                                            value={row.quantity}
+                                            onChange={(e) => updateRow(row.id, 'quantity', e.target.value)}
+                                            className="text-right font-mono"
+                                            min="0"
+                                        />
+                                    </div>
 
-                                {/* Unit */}
-                                <div className="w-20 space-y-1">
-                                    {index === 0 && <label className="block text-[10px] text-foreground/50 uppercase font-bold tracking-wider">Unit</label>}
-                                    <Select
-                                        options={[
-                                            { value: 'kg', label: 'kg' },
-                                            { value: 'g', label: 'g' },
-                                            { value: 'pcs', label: 'pcs' },
-                                            { value: 'Nos', label: 'Nos' },
-                                            { value: 'ltr', label: 'ltr' },
-                                        ]}
-                                        value={row.unit}
-                                        onChange={(val) => updateRow(row.id, 'unit', val)}
-                                    />
-                                </div>
+                                    {/* Unit */}
+                                    <div className="w-24 space-y-1">
+                                        {index === 0 && <label className="block text-[10px] text-foreground/50 uppercase font-bold tracking-wider">Unit</label>}
+                                        {row.isCustomUnit ? (
+                                            <div className="flex gap-1 items-center relative">
+                                                <Input
+                                                    placeholder="Unit"
+                                                    value={row.unit}
+                                                    onChange={(e) => updateRow(row.id, 'unit', e.target.value)}
+                                                    className="h-10 text-center font-medium pr-7"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        updateRow(row.id, 'isCustomUnit', false);
+                                                        updateRow(row.id, 'unit', 'kg');
+                                                    }}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-foreground/30 hover:text-foreground/75 focus:outline-none"
+                                                    title="Standard unit list"
+                                                >
+                                                    <Trash2 size={12} className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <Select
+                                                options={[
+                                                    { value: 'kg', label: 'kg' },
+                                                    { value: 'g', label: 'g' },
+                                                    { value: 'pcs', label: 'pcs' },
+                                                    { value: 'Nos', label: 'Nos' },
+                                                    { value: 'ltr', label: 'ltr' },
+                                                    { value: 'mtr', label: 'mtr' },
+                                                    { value: '__custom__', label: 'Other...' },
+                                                ]}
+                                                value={row.unit}
+                                                onChange={(val) => {
+                                                    if (val === '__custom__') {
+                                                        updateRow(row.id, 'isCustomUnit', true);
+                                                        updateRow(row.id, 'unit', '');
+                                                    } else {
+                                                        updateRow(row.id, 'unit', val);
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    </div>
 
-                                {/* Delete Action */}
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    onClick={() => removeVariantRow(row.id)}
-                                    disabled={variantRows.length === 1}
-                                    className="px-2 text-foreground/40 hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 rounded-lg"
-                                    title="Remove item"
-                                >
-                                    <Trash2 size={18} />
-                                </Button>
+                                    {/* Delete Action */}
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        onClick={() => removeVariantRow(row.id)}
+                                        disabled={variantRows.length === 1}
+                                        className="px-2 text-foreground/40 hover:text-destructive hover:bg-destructive/10 disabled:opacity-30 rounded-lg"
+                                        title="Remove item"
+                                    >
+                                        <Trash2 size={18} />
+                                    </Button>
                                 </motion.div>
                             ))}
                         </AnimatePresence>
@@ -372,18 +433,17 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                     <div className="space-y-4">
                         <div className="bg-foreground/[0.02] p-4 rounded-xl border border-border/50">
                             <p className="text-xs text-foreground/50 uppercase font-bold tracking-wider mb-1">Product</p>
-                            <p className="font-medium">{itemMode === 'new' ? newItemName : selectedGroup}</p>
+                            <p className="font-medium">{itemMode === 'new' ? newItemName : editedItemName}</p>
                         </div>
 
                         <div className="bg-foreground/[0.02] p-4 rounded-xl border border-border/50">
                             <p className="text-xs text-foreground/50 uppercase font-bold tracking-wider mb-3">Variants ({variantRows.filter(r => Number(r.quantity) > 0).length})</p>
                             <div className="space-y-3 max-h-[30vh] overflow-y-auto custom-scrollbar pr-2">
                                 {variantRows.filter(r => Number(r.quantity) > 0).map(row => {
-                                    const typeName = row.typeMode === 'new' ? row.newType : row.selectedType;
                                     return (
                                         <div key={row.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0 last:pb-0">
                                             <div className="flex flex-col">
-                                                <span className="font-medium text-sm">{typeName || 'Standard'}</span>
+                                                <span className="font-medium text-sm">{row.name || 'Standard'}</span>
                                             </div>
                                             <div className="font-mono text-sm px-2 py-1 bg-accent/10 text-accent rounded-lg">
                                                 +{row.quantity} {row.unit}

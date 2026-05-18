@@ -51,62 +51,87 @@ export async function deleteItemType(typeId: string) {
     }
 }
 
-export async function saveInventory(data: { item: string; variants: { type: string; quantity: number; unit: string }[] }) {
+export async function saveInventory(data: { 
+    id?: string; 
+    item: string; 
+    variants: { id?: string; type: string; quantity: number; unit: string }[] 
+}) {
     try {
-        // 1. Ensure the base item exists
+        // 1. Ensure the base item exists and is updated
         let itemId: string;
         
-        const { data: existingItem, error: fetchError } = await supabaseAdmin
-            .from('me_items')
-            .select('id')
-            .eq('name', data.item.trim())
-            .single();
-        
-        if (existingItem) {
-            itemId = existingItem.id;
-        } else {
-            const { data: newItem, error: createError } = await supabaseAdmin
+        if (data.id) {
+            // Update existing item name
+            const { error: updateError } = await supabaseAdmin
                 .from('me_items')
-                .insert({ name: data.item.trim() })
-                .select()
+                .update({ name: data.item.trim() })
+                .eq('id', data.id);
+            if (updateError) throw updateError;
+            itemId = data.id;
+        } else {
+            const { data: existingItem } = await supabaseAdmin
+                .from('me_items')
+                .select('id')
+                .eq('name', data.item.trim())
                 .single();
             
-            if (createError) throw createError;
-            itemId = newItem.id;
+            if (existingItem) {
+                itemId = existingItem.id;
+            } else {
+                const { data: newItem, error: createError } = await supabaseAdmin
+                    .from('me_items')
+                    .insert({ name: data.item.trim() })
+                    .select()
+                    .single();
+                
+                if (createError) throw createError;
+                itemId = newItem.id;
+            }
         }
 
         // 2. Process variants
         for (const v of data.variants) {
-            const { data: existingType } = await supabaseAdmin
-                .from('me_item_types')
-                .select('id, quantity')
-                .eq('item_id', itemId)
-                .eq('name', v.type.trim())
-                .single();
-            
-            if (existingType) {
-                // Update existing variant (Add to quantity)
+            if (v.id) {
+                // If variant has ID, rename and set quantity/unit directly by ID
                 const { error: updateError } = await supabaseAdmin
                     .from('me_item_types')
                     .update({ 
-                        quantity: existingType.quantity + v.quantity,
+                        name: v.type.trim(),
+                        quantity: v.quantity,
                         unit: v.unit 
                     })
-                    .eq('id', existingType.id);
+                    .eq('id', v.id);
                 
                 if (updateError) throw updateError;
             } else {
-                // Create new variant
-                const { error: insertError } = await supabaseAdmin
+                // Search for existing by name or insert new
+                const { data: existingType } = await supabaseAdmin
                     .from('me_item_types')
-                    .insert({
-                        item_id: itemId,
-                        name: v.type.trim(),
-                        quantity: v.quantity,
-                        unit: v.unit
-                    });
+                    .select('id')
+                    .eq('item_id', itemId)
+                    .eq('name', v.type.trim())
+                    .single();
                 
-                if (insertError) throw insertError;
+                if (existingType) {
+                    const { error: updateError } = await supabaseAdmin
+                        .from('me_item_types')
+                        .update({ 
+                            quantity: v.quantity,
+                            unit: v.unit 
+                        })
+                        .eq('id', existingType.id);
+                    if (updateError) throw updateError;
+                } else {
+                    const { error: insertError } = await supabaseAdmin
+                        .from('me_item_types')
+                        .insert({
+                            item_id: itemId,
+                            name: v.type.trim(),
+                            quantity: v.quantity,
+                            unit: v.unit
+                        });
+                    if (insertError) throw insertError;
+                }
             }
         }
 
