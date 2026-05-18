@@ -47,6 +47,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #1C1917; /* Stone 900 */
   --foreground: #FAFAF9; /* Stone 50 */
   --surface: #292524; /* Stone 800 */
@@ -124,4 +125,23 @@ html.theme-transition *:after {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--gray-400);
+}
+
+/* Custom CSS for number input spin buttons */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  height: 100%;
+  cursor: pointer;
+  opacity: 0.3;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+input[type="number"]::-webkit-inner-spin-button:hover,
+input[type="number"]::-webkit-outer-spin-button:hover {
+  opacity: 1;
+}
+
+.dark input[type="number"]::-webkit-inner-spin-button,
+.dark input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(0.1);
 }

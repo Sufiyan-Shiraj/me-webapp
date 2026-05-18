@@ -1,7 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ShoppingCart, Users } from 'lucide-react';
+import { CustomerModal } from './CustomerModal';
 
 interface TransactionSummaryProps {
     transactionCount: number;
@@ -9,6 +10,8 @@ interface TransactionSummaryProps {
 }
 
 export default function TransactionSummary({ transactionCount, customerCount }: TransactionSummaryProps) {
+    const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+
     return (
         <div className="h-full flex flex-col justify-between">
             <div className="flex flex-col mb-4">
@@ -33,7 +36,10 @@ export default function TransactionSummary({ transactionCount, customerCount }: 
                 </div>
 
                 {/* Customers */}
-                <div className="flex items-center justify-between pb-1 group">
+                <div 
+                    className="flex items-center justify-between pb-1 group cursor-pointer"
+                    onClick={() => setIsCustomerModalOpen(true)}
+                >
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-info/10 border border-info/20 text-info group-hover:bg-info/20 transition-colors">
                             <Users size={16} className="stroke-[1.5]" />
@@ -45,6 +51,11 @@ export default function TransactionSummary({ transactionCount, customerCount }: 
                     </div>
                 </div>
             </div>
+
+            <CustomerModal 
+                isOpen={isCustomerModalOpen} 
+                onClose={() => setIsCustomerModalOpen(false)} 
+            />
         </div>
     );
 }

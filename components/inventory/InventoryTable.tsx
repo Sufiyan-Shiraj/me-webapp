@@ -232,7 +232,8 @@ export default function InventoryTable() {
                         id,
                         name
                     )
-                `);
+                `)
+                .eq('is_archived', false);
                 
             if (error) throw error;
             

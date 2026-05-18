@@ -13,15 +13,18 @@ export async function deleteItem(itemId: string) {
     try {
         const { error } = await supabaseAdmin
             .from('me_items')
-            .delete()
+            .update({ is_archived: true })
             .eq('id', itemId);
 
-        if (error) {
-            if (error.code === '23503') {
-                return { success: false, error: 'Cannot delete item because it has associated sales records.' };
-            }
-            throw error;
-        }
+        if (error) throw error;
+
+        // Cascade soft-delete to variants
+        const { error: variantError } = await supabaseAdmin
+            .from('me_item_types')
+            .update({ is_archived: true })
+            .eq('item_id', itemId);
+        
+        if (variantError) throw variantError;
 
         revalidatePath('/inventory');
         return { success: true };
@@ -35,15 +38,10 @@ export async function deleteItemType(typeId: string) {
     try {
         const { error } = await supabaseAdmin
             .from('me_item_types')
-            .delete()
+            .update({ is_archived: true })
             .eq('id', typeId);
 
-        if (error) {
-            if (error.code === '23503') {
-                return { success: false, error: 'Cannot delete this type because it has associated sales records.' };
-            }
-            throw error;
-        }
+        if (error) throw error;
 
         revalidatePath('/inventory');
         return { success: true };

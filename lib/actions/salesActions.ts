@@ -46,3 +46,21 @@ export async function createSale(insertPayload: any[]) {
         return { success: false, error: error.message || 'Failed to create sale' };
     }
 }
+
+export async function deleteSale(saleId: number) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('me_sales')
+            .delete()
+            .eq('sale_id', saleId);
+
+        if (error) throw error;
+
+        revalidatePath('/sales');
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting sale:', error);
+        return { success: false, error: error.message || 'Failed to delete sale' };
+    }
+}

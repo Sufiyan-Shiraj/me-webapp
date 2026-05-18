@@ -39,7 +39,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
     const [newItemName, setNewItemName] = useState('');
 
     const [variantRows, setVariantRows] = useState<VariantRow[]>([
-        { id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '', unit: 'kg' }
+        { id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '0', unit: 'kg' }
     ]);
     const [showOverview, setShowOverview] = useState(false);
     const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             setItemMode('new');
             setSelectedGroup('');
             setNewItemName('');
-            setVariantRows([{ id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '', unit: 'kg' }]);
+            setVariantRows([{ id: '1', typeMode: 'new', selectedType: '', newType: '', quantity: '0', unit: 'kg' }]);
             setShowOverview(false);
         }
     }, [isOpen]);
@@ -74,7 +74,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                 typeMode: itemMode === 'new' ? 'new' : 'existing',
                 selectedType: '',
                 newType: '',
-                quantity: '',
+                quantity: '0',
                 unit: 'kg'
             }
         ]);
@@ -118,7 +118,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
             // Allow empty type (Standard) if user intended, but generally enforce input if "New Type" is selected and typed
             // If type is empty, we can default to 'Standard' or null in backend handling, but let's pass it as is.
 
-            if (quantity > 0) {
+            if (quantity >= 0 && row.quantity !== '') {
                 validVariants.push({
                     type: type || 'Standard',
                     quantity,
@@ -128,7 +128,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
         }
 
         if (validVariants.length === 0) {
-            alert("Please add at least one variant with a quantity.");
+            alert("Please add at least one variant with a valid quantity (0 or more).");
             return;
         }
 
@@ -140,6 +140,14 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
     };
 
     const existingGroupData = groups.find(g => g.name === selectedGroup);
+
+    const isItemNameValid = itemMode === 'new' ? newItemName.trim() !== '' : selectedGroup !== '';
+    const isVariantsValid = variantRows.length > 0 && variantRows.every(r => 
+        (r.typeMode === 'new' ? r.newType.trim() !== '' : r.selectedType !== '') && 
+        r.quantity !== '' && 
+        Number(r.quantity) >= 0
+    );
+    const isFormValid = isItemNameValid && isVariantsValid;
 
     return (
         <Modal
@@ -154,7 +162,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                         <Button 
                             variant="secondary" 
                             onClick={() => setShowOverview(true)} 
-                            disabled={variantRows.filter(r => Number(r.quantity) > 0 && (r.typeMode === 'new' ? r.newType || true : r.selectedType)).length === 0}
+                            disabled={!isFormValid}
                             className="bg-accent/10 text-accent hover:bg-accent/20"
                         >
                             Review Details

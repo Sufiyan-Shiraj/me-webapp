@@ -2,6 +2,7 @@ create table public.customers (
   id uuid not null default gen_random_uuid (),
   name text not null,
   created_at timestamp with time zone null default now(),
+  is_archived boolean null default false,
   constraint customers_pkey primary key (id),
   constraint customers_name_key unique (name)
 ) TABLESPACE pg_default;
@@ -37,6 +38,7 @@ create table public.me_item_types (
   quantity bigint null default 0,
   created_at timestamp with time zone null default now(),
   updated_at timestamp with time zone null default now(),
+  is_archived boolean null default false,
   constraint item_types_pkey primary key (id),
   constraint unique_item_variant unique (item_id, name),
   constraint item_types_item_id_fkey foreign KEY (item_id) references me_items (id) on delete CASCADE,
@@ -48,6 +50,7 @@ create table public.me_items (
   id uuid not null default gen_random_uuid (),
   name text not null,
   created_at timestamp with time zone null default now(),
+  is_archived boolean null default false,
   constraint items_pkey primary key (id),
   constraint items_name_key unique (name)
 ) TABLESPACE pg_default;
@@ -65,7 +68,7 @@ create table public.me_sales (
   done_time timestamp without time zone null,
   constraint me_sales_pkey primary key (id),
   constraint me_sales_customer_id_fkey foreign KEY (customer_id) references customers (id) on delete RESTRICT,
-  constraint me_sales_item_type_id_fkey foreign KEY (item_type_id) references me_item_types (id) on delete RESTRICT
+  constraint me_sales_item_type_id_fkey foreign KEY (item_type_id) references me_item_types (id) on delete CASCADE
 ) TABLESPACE pg_default;
 
 create index IF not exists idx_sales_sale_id on public.me_sales using btree (sale_id) TABLESPACE pg_default;

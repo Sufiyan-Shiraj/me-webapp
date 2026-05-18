@@ -6,7 +6,7 @@ import { TablePagination } from '@/components/ui/TablePagination';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Plus, Search, FileText, Filter, X, ChevronDown, Calendar, Hash, Download } from 'lucide-react';
+import { Plus, Search, FileText, Filter, X, ChevronDown, Calendar, Hash, Download, Trash2 } from 'lucide-react';
 import { SaleInvoice, InvoiceItem, ItemStatus } from '@/lib/types';
 import clsx from 'clsx';
 import styles from '@/components/ui/ui.module.css';
@@ -16,14 +16,15 @@ import { Select } from '@/components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { supabase } from '@/lib/supabase';
-import { updateSaleItem } from '@/lib/actions/salesActions';
+import { updateSaleItem, deleteSale } from '@/lib/actions/salesActions';
 
 interface SaleRowProps {
     sale: SaleInvoice;
     onUpdateItem?: (id: string, updates: Partial<InvoiceItem>) => void;
+    onDeleteSale?: (saleId: number) => void;
 }
 
-const SaleRow = ({ sale, onUpdateItem }: SaleRowProps) => {
+const SaleRow = ({ sale, onUpdateItem, onDeleteSale }: SaleRowProps) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const getItemStatus = (item: InvoiceItem): ItemStatus => {
@@ -73,10 +74,13 @@ const SaleRow = ({ sale, onUpdateItem }: SaleRowProps) => {
                         {overallStatus}
                     </span>
                 </TableCell>
-                <TableCell className="text-right">
-                    <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="View details">
-                            <FileText size={16} />
+                <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="View details" onClick={() => setIsOpen(!isOpen)}>
+                            <FileText size={20} />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-destructive hover:bg-destructive/10 rounded-full" title="Delete Sale" onClick={() => onDeleteSale?.(sale.sale_id)}>
+                            <Trash2 size={20} />
                         </Button>
                     </div>
                 </TableCell>
@@ -299,6 +303,21 @@ export default function SalesPage() {
         } catch (error) {
             console.error("Error updating item:", error);
             alert("Failed to update item fulfillment.");
+        }
+    };
+
+    const handleDeleteSale = async (saleId: number) => {
+        if (!confirm(`Are you sure you want to delete Sale #${saleId}? This cannot be undone.`)) return;
+
+        try {
+            const res = await deleteSale(saleId);
+            if (!res.success) throw new Error(res.error);
+            
+            // Remove from local state
+            setData(prev => prev.filter(sale => sale.sale_id !== saleId));
+        } catch (error: any) {
+            console.error("Error deleting sale:", error);
+            alert(error.message || "Failed to delete sale.");
         }
     };
 
@@ -578,6 +597,7 @@ export default function SalesPage() {
                                 key={inv.sale_id}
                                 sale={inv}
                                 onUpdateItem={handleUpdateItem}
+                                onDeleteSale={handleDeleteSale}
                             />
                         ))
                     ) : (

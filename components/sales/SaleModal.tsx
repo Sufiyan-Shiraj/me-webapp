@@ -48,7 +48,7 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
     const fetchData = async () => {
         setIsFetching(true);
         try {
-            const { data: custData } = await supabase.from('customers').select('*').order('name');
+            const { data: custData } = await supabase.from('customers').select('*').eq('is_archived', false).order('name');
             if (custData) setCustomers(custData);
 
             const { data: invData } = await supabase
@@ -59,6 +59,7 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                     quantity,
                     me_items ( id, name )
                 `)
+                .eq('is_archived', false)
                 .order('name');
             
             if (invData) {
