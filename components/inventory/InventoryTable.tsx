@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Search, Download, Plus, Package, Tag, Edit, Trash2, ChevronRight, PackageOpen } from 'lucide-react';
+import { Search, Download, Plus, Package, Tag, Edit, Trash2, ChevronRight, PackageOpen, RotateCcw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ProductModal } from './ProductModal';
@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import clsx from 'clsx';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { InventoryItem } from '@/lib/types';
-import { deleteItem, deleteItemType, saveInventory, updateInventoryQuantities, hardDeleteItem, hardDeleteItemType } from '@/lib/actions/inventoryActions';
+import { deleteItem, deleteItemType, saveInventory, updateInventoryQuantities, hardDeleteItem, hardDeleteItemType, unarchiveItem, unarchiveItemType } from '@/lib/actions/inventoryActions';
 
 // --- Types ---
 interface ProductGroup {
@@ -120,20 +120,47 @@ const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardPr
                                 >
                                     <Edit size={16} />
                                 </button>
-                                <button
-                                    onClick={async (e) => {
-                                        e.stopPropagation();
-                                        const isArchived = group.variants[0]?.item_is_archived;
-                                        if (isArchived) {
-                                            if (confirm(`Are you sure you want to PERMANENTLY delete ${group.name}? This action is irreversible.`)) {
-                                                const res = await hardDeleteItem(group.variants[0].item_id as any);
-                                                if (res.success) {
-                                                    onDelete?.();
-                                                } else {
-                                                    alert(res.error);
+                                {group.variants[0]?.item_is_archived ? (
+                                    <>
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (confirm(`Are you sure you want to restore ${group.name}?`)) {
+                                                    const res = await unarchiveItem(group.variants[0].item_id as any);
+                                                    if (res.success) {
+                                                        onDelete?.();
+                                                    } else {
+                                                        alert(res.error);
+                                                    }
                                                 }
-                                            }
-                                        } else {
+                                            }}
+                                            className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-emerald-50 hover:border-emerald-200 text-gray-400 hover:text-emerald-600 shadow-sm transition-all"
+                                            title="Restore/Unarchive Product"
+                                        >
+                                            <RotateCcw size={16} />
+                                        </button>
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (confirm(`Are you sure you want to PERMANENTLY delete ${group.name}? This action is irreversible.`)) {
+                                                    const res = await hardDeleteItem(group.variants[0].item_id as any);
+                                                    if (res.success) {
+                                                        onDelete?.();
+                                                    } else {
+                                                        alert(res.error);
+                                                    }
+                                                }
+                                            }}
+                                            className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-destructive-bg hover:border-destructive-bg text-gray-400 hover:text-destructive shadow-sm transition-all"
+                                            title="Delete Product Permanently"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
                                             if (confirm(`Are you sure you want to archive ${group.name}? This will archive all its variants.`)) {
                                                 const res = await deleteItem(group.variants[0].item_id as any);
                                                 if (res.success) {
@@ -142,13 +169,13 @@ const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardPr
                                                     alert(res.error);
                                                 }
                                             }
-                                        }
-                                    }}
-                                    className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-destructive-bg hover:border-destructive-bg text-gray-400 hover:text-destructive shadow-sm transition-all"
-                                    title={group.variants[0]?.item_is_archived ? "Delete Product Permanently" : "Archive Product"}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                        }}
+                                        className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-destructive-bg hover:border-destructive-bg text-gray-400 hover:text-destructive shadow-sm transition-all"
+                                        title="Archive Product"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </>
                         )}
                     </div>
@@ -185,35 +212,64 @@ const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardPr
                                                             </span>
                                                         )}
                                                         {canEdit && (
-                                                            <button
-                                                                onClick={async (e) => {
-                                                                    e.stopPropagation();
-                                                                    const isVarArchived = variant.is_archived || variant.item_is_archived;
-                                                                    if (isVarArchived) {
-                                                                        if (confirm(`PERMANENTLY delete variant ${variant.type || 'Standard'}? This action is irreversible.`)) {
-                                                                            const res = await hardDeleteItemType(variant.id);
-                                                                            if (res.success) {
-                                                                                onDelete?.();
-                                                                            } else {
-                                                                                alert(res.error);
+                                                            <div className="opacity-0 group-hover/var:opacity-100 flex items-center gap-1 ml-2 transition-all">
+                                                                {variant.is_archived || variant.item_is_archived ? (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={async (e) => {
+                                                                                e.stopPropagation();
+                                                                                if (confirm(`Restore variant ${variant.type || 'Standard'}?`)) {
+                                                                                    const res = await unarchiveItemType(variant.id);
+                                                                                    if (res.success) {
+                                                                                        onDelete?.();
+                                                                                    } else {
+                                                                                        alert(res.error);
+                                                                                    }
+                                                                                }
+                                                                            }}
+                                                                            className="p-1 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                                            title="Restore Variant"
+                                                                        >
+                                                                            <RotateCcw size={14} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={async (e) => {
+                                                                                e.stopPropagation();
+                                                                                if (confirm(`PERMANENTLY delete variant ${variant.type || 'Standard'}? This action is irreversible.`)) {
+                                                                                    const res = await hardDeleteItemType(variant.id);
+                                                                                    if (res.success) {
+                                                                                        onDelete?.();
+                                                                                    } else {
+                                                                                        alert(res.error);
+                                                                                    }
+                                                                                }
+                                                                            }}
+                                                                            className="p-1 text-gray-400 hover:text-destructive hover:bg-destructive-bg rounded-lg transition-all"
+                                                                            title="Delete Variant Permanently"
+                                                                        >
+                                                                            <Trash2 size={14} />
+                                                                        </button>
+                                                                    </>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={async (e) => {
+                                                                            e.stopPropagation();
+                                                                            if (confirm(`Archive variant ${variant.type || 'Standard'}?`)) {
+                                                                                const res = await deleteItemType(variant.id);
+                                                                                if (res.success) {
+                                                                                    onDelete?.();
+                                                                                } else {
+                                                                                    alert(res.error);
+                                                                                }
                                                                             }
-                                                                        }
-                                                                    } else {
-                                                                        if (confirm(`Archive variant ${variant.type || 'Standard'}?`)) {
-                                                                            const res = await deleteItemType(variant.id);
-                                                                            if (res.success) {
-                                                                                onDelete?.();
-                                                                            } else {
-                                                                                alert(res.error);
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className="opacity-0 group-hover/var:opacity-100 p-1.5 ml-2 text-gray-400 hover:text-destructive hover:bg-destructive-bg rounded-lg transition-all"
-                                                                title={variant.is_archived ? "Delete Variant Permanently" : "Archive Variant"}
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
+                                                                        }}
+                                                                        className="p-1 text-gray-400 hover:text-destructive hover:bg-destructive-bg rounded-lg transition-all"
+                                                                        title="Archive Variant"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
                                                     <div className="text-gray-700 font-mono font-medium text-sm text-right py-3">

@@ -51,6 +51,65 @@ export async function deleteItemType(typeId: string) {
     }
 }
 
+export async function unarchiveItem(itemId: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('me_items')
+            .update({ is_archived: false })
+            .eq('id', itemId);
+
+        if (error) throw error;
+
+        // Cascade restore to variants
+        const { error: variantError } = await supabaseAdmin
+            .from('me_item_types')
+            .update({ is_archived: false })
+            .eq('item_id', itemId);
+        
+        if (variantError) throw variantError;
+
+        revalidatePath('/inventory');
+        return { success: true };
+    } catch (error) {
+        console.error('Error unarchiving item:', error);
+        return { success: false, error: 'Failed to restore product.' };
+    }
+}
+
+export async function unarchiveItemType(typeId: string) {
+    try {
+        // Get parent item ID first
+        const { data: variant, error: getError } = await supabaseAdmin
+            .from('me_item_types')
+            .select('item_id')
+            .eq('id', typeId)
+            .single();
+        if (getError) throw getError;
+
+        // Unarchive the variant itself
+        const { error } = await supabaseAdmin
+            .from('me_item_types')
+            .update({ is_archived: false })
+            .eq('id', typeId);
+        if (error) throw error;
+
+        // Unarchive parent item as well to ensure visibility
+        if (variant?.item_id) {
+            const { error: parentError } = await supabaseAdmin
+                .from('me_items')
+                .update({ is_archived: false })
+                .eq('id', variant.item_id);
+            if (parentError) throw parentError;
+        }
+
+        revalidatePath('/inventory');
+        return { success: true };
+    } catch (error) {
+        console.error('Error unarchiving item type:', error);
+        return { success: false, error: 'Failed to restore variant.' };
+    }
+}
+
 export async function saveInventory(data: { 
     id?: string; 
     item: string; 

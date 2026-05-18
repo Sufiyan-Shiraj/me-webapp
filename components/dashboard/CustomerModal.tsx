@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Search, Plus, UserCircle2, Trash2 } from 'lucide-react';
-import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer } from '@/lib/actions/customerActions';
+import { Search, Plus, UserCircle2, Trash2, RotateCcw } from 'lucide-react';
+import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer, unarchiveCustomer } from '@/lib/actions/customerActions';
 import { Customer } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -81,6 +81,17 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
         }
     };
 
+    const handleRestoreCustomer = async (id: string, name: string) => {
+        if (confirm(`Are you sure you want to restore ${name}?`)) {
+            const res = await unarchiveCustomer(id);
+            if (res.success) {
+                await fetchCustomers();
+            } else {
+                alert(res.error);
+            }
+        }
+    };
+
     const filteredCustomers = customers.filter(c => {
         const query = searchTerm.toLowerCase().trim();
         if (query === 'archived') {
@@ -144,13 +155,32 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
                                                 </span>
                                             )}
                                         </div>
-                                        <button 
-                                            onClick={() => handleDeleteCustomer(customer.id, customer.name, customer.is_archived)}
-                                            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
-                                            title={customer.is_archived ? "Delete Customer Permanently" : "Archive Customer"}
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
+                                        {customer.is_archived ? (
+                                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all">
+                                                <button 
+                                                    onClick={() => handleRestoreCustomer(customer.id, customer.name)}
+                                                    className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-all"
+                                                    title="Restore Customer"
+                                                >
+                                                    <RotateCcw size={14} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDeleteCustomer(customer.id, customer.name, customer.is_archived)}
+                                                    className="p-1.5 text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
+                                                    title="Delete Customer Permanently"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <button 
+                                                onClick={() => handleDeleteCustomer(customer.id, customer.name, customer.is_archived)}
+                                                className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
+                                                title="Archive Customer"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
                                     </motion.div>
                                 ))}
                             </AnimatePresence>

@@ -59,6 +59,23 @@ export async function deleteCustomer(id: string) {
     }
 }
 
+export async function unarchiveCustomer(id: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('customers')
+            .update({ is_archived: false })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        revalidatePath('/sales');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error unarchiving customer:', error);
+        return { success: false, error: error.message || 'Failed to restore customer' };
+    }
+}
+
 export async function hardDeleteCustomer(id: string) {
     try {
         // Check if there are any sales associated with this customer
