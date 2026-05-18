@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import clsx from 'clsx';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { InventoryItem } from '@/lib/types';
-import { deleteItem, deleteItemType, saveInventory, updateInventoryQuantities } from '@/lib/actions/inventoryActions';
+import { deleteItem, deleteItemType, saveInventory, updateInventoryQuantities, hardDeleteItem, hardDeleteItemType } from '@/lib/actions/inventoryActions';
 
 // --- Types ---
 interface ProductGroup {
@@ -80,7 +80,14 @@ const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardPr
                             <ChevronRight size={18} />
                         </motion.div>
                         <div className="flex flex-col">
-                            <span className="font-bold text-gray-900">{group.name}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-gray-900">{group.name}</span>
+                                {group.variants[0]?.item_is_archived && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 border border-amber-200 text-amber-800 uppercase tracking-wide shrink-0">
+                                        Archived
+                                    </span>
+                                )}
+                            </div>
                             <span className="text-xs text-gray-500 font-medium">{group.variants.length} Variant{group.variants.length !== 1 ? 's' : ''}</span>
                         </div>
                     </div>
@@ -116,17 +123,29 @@ const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardPr
                                 <button
                                     onClick={async (e) => {
                                         e.stopPropagation();
-                                        if (confirm(`Are you sure you want to delete ${group.name}? This will delete all variants.`)) {
-                                            const res = await deleteItem(group.variants[0].item_id as any);
-                                            if (res.success) {
-                                                onDelete?.();
-                                            } else {
-                                                alert(res.error);
+                                        const isArchived = group.variants[0]?.item_is_archived;
+                                        if (isArchived) {
+                                            if (confirm(`Are you sure you want to PERMANENTLY delete ${group.name}? This action is irreversible.`)) {
+                                                const res = await hardDeleteItem(group.variants[0].item_id as any);
+                                                if (res.success) {
+                                                    onDelete?.();
+                                                } else {
+                                                    alert(res.error);
+                                                }
+                                            }
+                                        } else {
+                                            if (confirm(`Are you sure you want to archive ${group.name}? This will archive all its variants.`)) {
+                                                const res = await deleteItem(group.variants[0].item_id as any);
+                                                if (res.success) {
+                                                    onDelete?.();
+                                                } else {
+                                                    alert(res.error);
+                                                }
                                             }
                                         }
                                     }}
                                     className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-destructive-bg hover:border-destructive-bg text-gray-400 hover:text-destructive shadow-sm transition-all"
-                                    title="Delete Item"
+                                    title={group.variants[0]?.item_is_archived ? "Delete Product Permanently" : "Archive Product"}
                                 >
                                     <Trash2 size={16} />
                                 </button>
@@ -160,21 +179,38 @@ const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardPr
                                                     <div className="text-gray-900 text-sm font-semibold py-3 flex items-center">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-accent/40 mr-3" />
                                                         <span className="flex-1 truncate">{variant.type || 'Standard'}</span>
+                                                        {variant.is_archived && (
+                                                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100/70 border border-amber-200 text-amber-800 uppercase tracking-wide mr-2 shrink-0">
+                                                                Archived
+                                                            </span>
+                                                        )}
                                                         {canEdit && (
                                                             <button
                                                                 onClick={async (e) => {
                                                                     e.stopPropagation();
-                                                                    if (confirm(`Delete variant ${variant.type || 'Standard'}?`)) {
-                                                                        const res = await deleteItemType(variant.id);
-                                                                        if (res.success) {
-                                                                            onDelete?.();
-                                                                        } else {
-                                                                            alert(res.error);
+                                                                    const isVarArchived = variant.is_archived || variant.item_is_archived;
+                                                                    if (isVarArchived) {
+                                                                        if (confirm(`PERMANENTLY delete variant ${variant.type || 'Standard'}? This action is irreversible.`)) {
+                                                                            const res = await hardDeleteItemType(variant.id);
+                                                                            if (res.success) {
+                                                                                onDelete?.();
+                                                                            } else {
+                                                                                alert(res.error);
+                                                                            }
+                                                                        }
+                                                                    } else {
+                                                                        if (confirm(`Archive variant ${variant.type || 'Standard'}?`)) {
+                                                                            const res = await deleteItemType(variant.id);
+                                                                            if (res.success) {
+                                                                                onDelete?.();
+                                                                            } else {
+                                                                                alert(res.error);
+                                                                            }
                                                                         }
                                                                     }
                                                                 }}
                                                                 className="opacity-0 group-hover/var:opacity-100 p-1.5 ml-2 text-gray-400 hover:text-destructive hover:bg-destructive-bg rounded-lg transition-all"
-                                                                title="Delete Variant"
+                                                                title={variant.is_archived ? "Delete Variant Permanently" : "Archive Variant"}
                                                             >
                                                                 <Trash2 size={14} />
                                                             </button>
@@ -228,12 +264,13 @@ export default function InventoryTable() {
                     quantity,
                     unit,
                     item_id,
+                    is_archived,
                     me_items (
                         id,
-                        name
+                        name,
+                        is_archived
                     )
-                `)
-                .eq('is_archived', false);
+                `);
                 
             if (error) throw error;
             
@@ -253,7 +290,9 @@ export default function InventoryTable() {
                     item: itemName,
                     type: row.name,
                     unit: row.unit,
-                    quantity: row.quantity
+                    quantity: row.quantity,
+                    is_archived: row.is_archived,
+                    item_is_archived: row.me_items.is_archived
                 };
                 
                 if (!groupedMap.has(itemName)) {
@@ -277,14 +316,46 @@ export default function InventoryTable() {
     };
 
     const sortedAndFilteredGroups = useMemo(() => {
-        let result = groups;
-        
-        if (searchTerm) {
-            const lowerTerm = searchTerm.toLowerCase();
-            result = result.filter(g =>
-                g.name.toLowerCase().includes(lowerTerm) ||
-                g.variants.some(v => (v.type || '').toLowerCase().includes(lowerTerm))
-            );
+        const term = searchTerm.toLowerCase().trim();
+        let result: ProductGroup[] = [];
+
+        if (term === 'archived') {
+            // Show only archived items or groups that contain archived variants
+            groups.forEach(g => {
+                const isParentArchived = g.variants.some(v => v.item_is_archived);
+                const archivedVariants = g.variants.filter(v => v.is_archived || v.item_is_archived);
+                if (isParentArchived || archivedVariants.length > 0) {
+                    result.push({
+                        name: g.name,
+                        variants: archivedVariants
+                    });
+                }
+            });
+        } else if (term === '') {
+            // Show only active items and active variants
+            groups.forEach(g => {
+                const activeVariants = g.variants.filter(v => !v.is_archived && !v.item_is_archived);
+                if (activeVariants.length > 0) {
+                    result.push({
+                        name: g.name,
+                        variants: activeVariants
+                    });
+                }
+            });
+        } else {
+            // Search matches name or variant type (could be active or archived)
+            groups.forEach(g => {
+                const matchesParentName = g.name.toLowerCase().includes(term);
+                const matchingVariants = g.variants.filter(v => 
+                    matchesParentName || (v.type || '').toLowerCase().includes(term)
+                );
+                if (matchingVariants.length > 0) {
+                    result.push({
+                        name: g.name,
+                        variants: matchingVariants
+                    });
+                }
+            });
         }
 
         return [...result].sort((a, b) => {

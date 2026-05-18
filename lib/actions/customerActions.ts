@@ -31,7 +31,6 @@ export async function getCustomers() {
         const { data, error } = await supabaseAdmin
             .from('customers')
             .select('*')
-            .eq('is_archived', false)
             .order('name', { ascending: true });
 
         if (error) throw error;
@@ -57,5 +56,34 @@ export async function deleteCustomer(id: string) {
     } catch (error: any) {
         console.error('Error deleting customer:', error);
         return { success: false, error: error.message || 'Failed to delete customer' };
+    }
+}
+
+export async function hardDeleteCustomer(id: string) {
+    try {
+        // Check if there are any sales associated with this customer
+        const { count, error: countError } = await supabaseAdmin
+            .from('me_sales')
+            .select('*', { count: 'exact', head: true })
+            .eq('customer_id', id);
+        
+        if (countError) throw countError;
+        
+        if (count && count > 0) {
+            return { success: false, error: 'Cannot delete: This customer has associated sales history.' };
+        }
+        
+        const { error } = await supabaseAdmin
+            .from('customers')
+            .delete()
+            .eq('id', id);
+            
+        if (error) throw error;
+        
+        revalidatePath('/sales');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error hard deleting customer:', error);
+        return { success: false, error: error.message || 'Failed to permanently delete customer' };
     }
 }

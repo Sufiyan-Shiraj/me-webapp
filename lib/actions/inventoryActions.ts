@@ -139,3 +139,82 @@ export async function updateInventoryQuantities(updates: { id: string; quantity:
         return { success: false, error: error.message || 'Failed to update quantities' };
     }
 }
+
+export async function hardDeleteItem(itemId: string) {
+    try {
+        // 1. Get all variant IDs for this item
+        const { data: variants, error: fetchError } = await supabaseAdmin
+            .from('me_item_types')
+            .select('id')
+            .eq('item_id', itemId);
+            
+        if (fetchError) throw fetchError;
+        
+        const variantIds = variants?.map(v => v.id) || [];
+        
+        if (variantIds.length > 0) {
+            // 2. Check if any variant has sales history
+            const { count, error: countError } = await supabaseAdmin
+                .from('me_sales')
+                .select('*', { count: 'exact', head: true })
+                .in('item_type_id', variantIds);
+                
+            if (countError) throw countError;
+            
+            if (count && count > 0) {
+                return { success: false, error: 'Cannot delete: This product has variants with associated sales history.' };
+            }
+            
+            // 3. Delete all variants first
+            const { error: deleteVariantsError } = await supabaseAdmin
+                .from('me_item_types')
+                .delete()
+                .eq('item_id', itemId);
+                
+            if (deleteVariantsError) throw deleteVariantsError;
+        }
+        
+        // 4. Delete the parent item
+        const { error: deleteItemError } = await supabaseAdmin
+            .from('me_items')
+            .delete()
+            .eq('id', itemId);
+            
+        if (deleteItemError) throw deleteItemError;
+        
+        revalidatePath('/inventory');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error hard deleting item:', error);
+        return { success: false, error: error.message || 'Failed to permanently delete product' };
+    }
+}
+
+export async function hardDeleteItemType(typeId: string) {
+    try {
+        // Check if there are any sales associated with this item type
+        const { count, error: countError } = await supabaseAdmin
+            .from('me_sales')
+            .select('*', { count: 'exact', head: true })
+            .eq('item_type_id', typeId);
+            
+        if (countError) throw countError;
+        
+        if (count && count > 0) {
+            return { success: false, error: 'Cannot delete: This variant has associated sales history.' };
+        }
+        
+        const { error } = await supabaseAdmin
+            .from('me_item_types')
+            .delete()
+            .eq('id', typeId);
+            
+        if (error) throw error;
+        
+        revalidatePath('/inventory');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error hard deleting variant:', error);
+        return { success: false, error: error.message || 'Failed to permanently delete variant' };
+    }
+}

@@ -3,7 +3,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Search, Plus, UserCircle2, Trash2 } from 'lucide-react';
-import { getCustomers, createCustomer, deleteCustomer } from '@/lib/actions/customerActions';
+import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer } from '@/lib/actions/customerActions';
 import { Customer } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -59,20 +59,38 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
         }
     };
 
-    const handleDeleteCustomer = async (id: string, name: string) => {
-        if (confirm(`Are you sure you want to delete ${name}?`)) {
-            const res = await deleteCustomer(id);
-            if (res.success) {
-                await fetchCustomers();
-            } else {
-                alert(res.error);
+    const handleDeleteCustomer = async (id: string, name: string, isArchived?: boolean) => {
+        if (isArchived) {
+            if (confirm(`Are you sure you want to PERMANENTLY delete ${name}? This action is irreversible.`)) {
+                const res = await hardDeleteCustomer(id);
+                if (res.success) {
+                    await fetchCustomers();
+                } else {
+                    alert(res.error);
+                }
+            }
+        } else {
+            if (confirm(`Are you sure you want to archive ${name}?`)) {
+                const res = await deleteCustomer(id);
+                if (res.success) {
+                    await fetchCustomers();
+                } else {
+                    alert(res.error);
+                }
             }
         }
     };
 
-    const filteredCustomers = customers.filter(c => 
-        c.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredCustomers = customers.filter(c => {
+        const query = searchTerm.toLowerCase().trim();
+        if (query === 'archived') {
+            return c.is_archived;
+        }
+        if (query === '') {
+            return !c.is_archived;
+        }
+        return c.name.toLowerCase().includes(query);
+    });
 
     const hasExactMatch = customers.some(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase());
 
@@ -80,8 +98,8 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Active Customers"
-            description="View and manage your active customers."
+            title="Active & Archived Customers"
+            description="View and manage active customers, or search 'archived' to manage archived records."
             footer={
                 <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
                     Close
@@ -91,7 +109,7 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
             <div className="space-y-4">
                 <div className="relative group">
                     <Input
-                        placeholder="Search customers..."
+                        placeholder="Search customers (type 'archived' for soft-deleted)..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 h-11 bg-gray-50 border-border/50 focus:bg-background transition-all"
@@ -118,13 +136,18 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
                                         <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0">
                                             <UserCircle2 size={16} />
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 flex items-center gap-2">
                                             <h4 className="text-sm font-bold text-foreground truncate">{customer.name}</h4>
+                                            {customer.is_archived && (
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100/80 border border-amber-200 text-amber-800 uppercase tracking-wide shrink-0">
+                                                    Archived
+                                                </span>
+                                            )}
                                         </div>
                                         <button 
-                                            onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                                            onClick={() => handleDeleteCustomer(customer.id, customer.name, customer.is_archived)}
                                             className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
-                                            title="Delete Customer"
+                                            title={customer.is_archived ? "Delete Customer Permanently" : "Archive Customer"}
                                         >
                                             <Trash2 size={14} />
                                         </button>

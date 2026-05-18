@@ -17,6 +17,8 @@ export interface InventoryItem {
     type: string | null; // variant
     unit?: string;
     quantity: number; // bigint
+    is_archived?: boolean;
+    item_is_archived?: boolean;
 }
 
 export type ItemStatus = 'waiting' | 'completed' | 'pending';
@@ -25,6 +27,7 @@ export type SaleStatus = 'waiting' | 'completed' | 'pending' | 'cancelled';
 export interface Customer {
     id: string;
     name: string;
+    is_archived?: boolean;
 }
 
 export interface Item {

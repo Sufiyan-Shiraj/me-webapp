@@ -57,7 +57,7 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
                     id,
                     name,
                     quantity,
-                    me_items ( id, name )
+                    me_items ( id, name, is_archived )
                 `)
                 .eq('is_archived', false)
                 .order('name');
@@ -65,7 +65,8 @@ export function SaleModal({ isOpen, onClose, onSubmit }: SaleModalProps) {
             if (invData) {
                 const grouped = new Map();
                 invData.forEach((row: any) => {
-                    const itemName = row.me_items?.name || 'Unknown';
+                    if (!row.me_items || row.me_items.is_archived) return;
+                    const itemName = row.me_items.name;
                     if (!grouped.has(itemName)) {
                         grouped.set(itemName, { itemName, types: [] });
                     }

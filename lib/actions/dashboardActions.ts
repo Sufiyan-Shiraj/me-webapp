@@ -25,7 +25,8 @@ export async function getDashboardStats() {
         // 2. Get Active Customers Count
         const { data: customers, error: customerError, count: customerCount } = await supabaseAdmin
             .from('customers')
-            .select('*', { count: 'exact' });
+            .select('*', { count: 'exact' })
+            .eq('is_archived', false);
         
         if (customerError) {
             console.error('Error fetching customers:', customerError);
@@ -41,17 +42,25 @@ export async function getDashboardStats() {
                 name,
                 quantity,
                 me_items (
-                    name
+                    name,
+                    is_archived
                 )
-            `);
+            `)
+            .eq('is_archived', false);
         
         if (inventoryError) throw inventoryError;
 
-        const totalItems = inventory.length;
-        const totalQuantity = inventory.reduce((sum, item) => sum + Number(item.quantity), 0);
-        const lowStockItems = inventory.filter(item => item.quantity <= 10);
+        // Filter out variants where the parent item is archived
+        const activeInventory = (inventory || []).filter(item => {
+            const parentItem = item.me_items as any;
+            return parentItem && !parentItem.is_archived;
+        });
+
+        const totalItems = activeInventory.length;
+        const totalQuantity = activeInventory.reduce((sum, item) => sum + Number(item.quantity), 0);
+        const lowStockItems = activeInventory.filter(item => item.quantity <= 10);
         const lowStockCount = lowStockItems.filter(item => item.quantity > 0).length;
-        const outOfStockCount = inventory.filter(item => item.quantity <= 0).length;
+        const outOfStockCount = activeInventory.filter(item => item.quantity <= 0).length;
 
         return {
             salesCount: uniqueSales,
