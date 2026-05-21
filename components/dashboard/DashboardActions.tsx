@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { ProductModal } from '@/components/inventory/ProductModal';
 import { SaleModal } from '@/components/sales/SaleModal';
-import { InventoryItem, SaleInvoice } from '@/lib/types';
+import { InventoryItem } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { saveInventory } from '@/lib/actions/inventoryActions';
 import { useRouter } from 'next/navigation';
