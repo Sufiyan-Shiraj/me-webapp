@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, PieChart, Users } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Truck, Users, ClipboardList } from 'lucide-react';
 
 export const navItems = [
     {
@@ -14,9 +14,14 @@ export const navItems = [
         icon: Package
     },
     {
-        name: 'Sales',
+        name: 'Orders',
+        href: '/orders',
+        icon: ClipboardList
+    },
+    {
+        name: 'Shipments',
         href: '/sales',
-        icon: ShoppingCart
+        icon: Truck
     },
     {
         name: 'User Management',

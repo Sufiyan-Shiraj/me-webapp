@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Activity, LogIn, ShoppingCart, Package, UserCircle } from 'lucide-react';
+import { Activity, LogIn, ShoppingCart, Package, UserCircle, ArrowUpRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
 
 interface ActivityItem {
     id: string;
@@ -41,12 +42,17 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
     };
 
     return (
-        <div className="h-full flex flex-col">
+        <Link href="/users" className="h-full flex flex-col group cursor-pointer block no-underline">
             <div className="flex flex-col mb-4">
-                <h3 className="text-sm font-semibold tracking-wide text-foreground/60 uppercase">Recent Activity</h3>
-                <p className="text-[10px] text-foreground/40 uppercase tracking-widest font-medium mt-1">
-                    Live Updates
-                </p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-sm font-semibold tracking-wide text-foreground/60 uppercase group-hover:text-accent transition-colors">Recent Activity</h3>
+                        <p className="text-[10px] text-foreground/40 uppercase tracking-widest font-medium mt-1">
+                            Live Updates
+                        </p>
+                    </div>
+                    <ArrowUpRight size={16} className="text-foreground/40 group-hover:text-accent transition-colors" />
+                </div>
             </div>
             <div className="space-y-4 flex-1">
                 {activities.length > 0 ? (
@@ -76,6 +82,6 @@ export default function RecentActivity({ activities }: RecentActivityProps) {
                     </div>
                 )}
             </div>
-        </div>
+        </Link>
     );
 }

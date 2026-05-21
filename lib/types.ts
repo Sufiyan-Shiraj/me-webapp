@@ -27,6 +27,7 @@ export type SaleStatus = 'waiting' | 'completed' | 'pending' | 'cancelled';
 export interface Customer {
     id: string;
     name: string;
+    district?: string;
     is_archived?: boolean;
 }
 
@@ -43,8 +44,8 @@ export interface ItemType {
     quantity: number;
 }
 
-export interface InvoiceItem {
-    id: string; // The me_sales row id
+export interface OrderItem {
+    id: string; // The me_orders row id
     item_type_id: string;
     product_name: string; // Joined from me_items
     variant: string; // Joined from me_item_types
@@ -52,15 +53,34 @@ export interface InvoiceItem {
     pending: number;
     done: boolean;
     done_time?: string;
+    place?: string;
 }
 
-export interface SaleInvoice {
-    sale_id: number;
+export interface OrderInvoice {
+    order_id: number;
     date: string;
     customer_id: string;
     customer_name: string;
-    items: InvoiceItem[];
+    items: OrderItem[];
     status?: SaleStatus;
+}
+
+export interface SaleItem {
+    id: string;
+    sale_id: string;
+    order_item_id: string;
+    quantity: number;
+    product_name?: string; // Joined field for display
+    variant?: string; // Joined field for display
+}
+
+export interface Sale {
+    id: string;
+    sale_id: number;
+    created_at: string;
+    customer_id: string;
+    customer_name?: string;
+    items: SaleItem[];
 }
 
 export interface LoginActivity {

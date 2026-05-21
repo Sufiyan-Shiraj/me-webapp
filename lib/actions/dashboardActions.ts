@@ -13,14 +13,29 @@ export async function getDashboardStats() {
         // 1. Get Sales Count (Total unique sale_ids) and Total Units Sold
         const { data: sales, error: salesError } = await supabaseAdmin
             .from('me_sales')
-            .select('sale_id, quantity');
+            .select('sale_id, me_sale_items(quantity)');
         
         if (salesError) {
             console.error('Error fetching sales:', salesError);
         }
 
         const uniqueSales = sales ? new Set(sales.map(s => s.sale_id)).size : 0;
-        const totalUnitsSold = sales ? sales.reduce((sum, s) => sum + Number(s.quantity), 0) : 0;
+        const totalUnitsSold = sales ? sales.reduce((sum, s) => {
+            const items = s.me_sale_items as any[] || [];
+            return sum + items.reduce((itemSum, item) => itemSum + Number(item.quantity), 0);
+        }, 0) : 0;
+
+        // 1.5 Get Order Count (Pending Orders only)
+        const { data: orders, error: ordersError } = await supabaseAdmin
+            .from('me_orders')
+            .select('order_id')
+            .gt('pending', 0);
+        
+        if (ordersError) {
+            console.error('Error fetching orders:', ordersError);
+        }
+
+        const uniqueOrders = orders ? new Set(orders.map(o => o.order_id)).size : 0;
 
         // 2. Get Active Customers Count
         const { data: customers, error: customerError, count: customerCount } = await supabaseAdmin
@@ -64,6 +79,7 @@ export async function getDashboardStats() {
 
         return {
             salesCount: uniqueSales,
+            orderCount: uniqueOrders,
             customerCount: finalCustomerCount,
             totalUnitsSold,
             inventory: {
@@ -85,6 +101,7 @@ export async function getDashboardStats() {
         console.error('Error fetching dashboard stats:', error);
         return {
             salesCount: 0,
+            orderCount: 0,
             customerCount: 0,
             inventory: {
                 totalItems: 0,

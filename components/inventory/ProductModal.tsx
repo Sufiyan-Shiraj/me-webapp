@@ -81,7 +81,7 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
         if (itemMode === 'existing' && selectedGroup) {
             const groupData = activeGroups.find(g => g.name === selectedGroup);
             if (groupData && groupData.variants.length > 0) {
-                const standardUnits = ['kg', 'g', 'pcs', 'Nos', 'ltr', 'mtr'];
+                const standardUnits = ['Nos', 'roll', 'bundle'];
                 const filledRows = groupData.variants.map(v => {
                     const unitVal = v.unit || 'kg';
                     const isCustom = !standardUnits.includes(unitVal);
@@ -383,12 +383,9 @@ export function ProductModal({ isOpen, onClose, onSubmit, groups = [] }: Product
                                         ) : (
                                             <Select
                                                 options={[
-                                                    { value: 'kg', label: 'kg' },
-                                                    { value: 'g', label: 'g' },
-                                                    { value: 'pcs', label: 'pcs' },
                                                     { value: 'Nos', label: 'Nos' },
-                                                    { value: 'ltr', label: 'ltr' },
-                                                    { value: 'mtr', label: 'mtr' },
+                                                    { value: 'roll', label: 'roll' },
+                                                    { value: 'bundle', label: 'bundle' },
                                                     { value: '__custom__', label: 'Other...' },
                                                 ]}
                                                 value={row.unit}

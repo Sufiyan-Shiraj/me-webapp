@@ -8,11 +8,14 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
-export async function createCustomer(name: string) {
+export async function createCustomer(name: string, district?: string) {
     try {
+        const payload: any = { name: name.trim() };
+        if (district) payload.district = district;
+
         const { data, error } = await supabaseAdmin
             .from('customers')
-            .insert({ name: name.trim() })
+            .insert(payload)
             .select()
             .single();
 
@@ -56,6 +59,24 @@ export async function deleteCustomer(id: string) {
     } catch (error: any) {
         console.error('Error deleting customer:', error);
         return { success: false, error: error.message || 'Failed to delete customer' };
+    }
+}
+
+export async function updateCustomerDistrict(id: string, district: string | null) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('customers')
+            .update({ district })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        revalidatePath('/sales');
+        revalidatePath('/users');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating customer district:', error);
+        return { success: false, error: error.message || 'Failed to update district' };
     }
 }
 

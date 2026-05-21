@@ -3,9 +3,15 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Search, Plus, UserCircle2, Trash2, RotateCcw } from 'lucide-react';
-import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer, unarchiveCustomer } from '@/lib/actions/customerActions';
+import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer, unarchiveCustomer, updateCustomerDistrict } from '@/lib/actions/customerActions';
 import { Customer } from '@/lib/types';
+import { Select } from '@/components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const KERALA_DISTRICTS = [
+    'Alappuzha', 'Ernakulam', 'Idukki', 'Kannur', 'Kasaragod', 'Kollam', 'Kottayam',
+    'Kozhikode', 'Malappuram', 'Palakkad', 'Pathanamthitta', 'Thiruvananthapuram', 'Thrissur', 'Wayanad'
+];
 
 interface CustomerModalProps {
     isOpen: boolean;
@@ -92,6 +98,16 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
         }
     };
 
+    const handleUpdateDistrict = async (id: string, district: string) => {
+        const value = district === 'none' ? null : district;
+        const res = await updateCustomerDistrict(id, value);
+        if (res.success) {
+            await fetchCustomers();
+        } else {
+            alert(res.error);
+        }
+    };
+
     const filteredCustomers = customers.filter(c => {
         const query = searchTerm.toLowerCase().trim();
         if (query === 'archived') {
@@ -154,6 +170,16 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
                                                     Archived
                                                 </span>
                                             )}
+                                        </div>
+                                        <div className="w-32 shrink-0">
+                                            <Select
+                                                value={customer.district || 'none'}
+                                                onChange={(val) => handleUpdateDistrict(customer.id, val as string)}
+                                                options={[
+                                                    { value: 'none', label: 'Select District' },
+                                                    ...KERALA_DISTRICTS.map(d => ({ value: d, label: d }))
+                                                ]}
+                                            />
                                         </div>
                                         {customer.is_archived ? (
                                             <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all">

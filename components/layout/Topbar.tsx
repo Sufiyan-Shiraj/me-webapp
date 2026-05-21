@@ -14,12 +14,21 @@ export default function Topbar() {
     const { user, logout } = useAuth();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 10);
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme');
         const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
+
         if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
             document.documentElement.classList.add('dark');
             setIsDarkMode(true);
@@ -42,7 +51,7 @@ export default function Topbar() {
     const toggleTheme = () => {
         // Add transition class to prevent color flashing/epilepsy
         document.documentElement.classList.add('theme-transition');
-        
+
         if (isDarkMode) {
             document.documentElement.classList.remove('dark');
             localStorage.setItem('theme', 'light');
@@ -52,7 +61,7 @@ export default function Topbar() {
             localStorage.setItem('theme', 'dark');
             setIsDarkMode(true);
         }
-        
+
         // Remove class after transition completes
         setTimeout(() => {
             document.documentElement.classList.remove('theme-transition');
@@ -65,12 +74,17 @@ export default function Topbar() {
 
     return (
         <header className="sticky top-4 z-50 w-full px-4 md:px-8 max-w-[1400px] mx-auto transition-colors duration-300">
-            <div className="flex h-16 items-center px-4 md:px-6 bg-surface/70 backdrop-blur-2xl border border-border shadow-float rounded-2xl">
+            <div className={clsx(
+                "flex h-16 items-center px-4 md:px-6 transition-all duration-300 rounded-2xl",
+                isScrolled 
+                    ? "bg-white/80 dark:bg-[#292524]/80 backdrop-blur-md border border-border shadow-float"
+                    : "bg-transparent border border-transparent shadow-none"
+            )}>
                 <Link href="/" className="flex items-center gap-3 mr-8 group">
                     <div className="h-8 w-8 bg-gradient-to-br from-accent to-orange-500 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-accent/20 group-hover:shadow-accent/40 transition-all duration-300 group-hover:scale-105">
                         M
                     </div>
-                    <span className="font-bold text-lg tracking-tight text-foreground uppercase transition-colors duration-300 group-hover:text-accent">
+                    <span className="font-bold text-xl tracking-tight text-foreground uppercase transition-colors duration-300 group-hover:text-accent">
                         ME FLOW
                     </span>
                 </Link>
@@ -84,7 +98,7 @@ export default function Topbar() {
                                 key={item.href}
                                 href={item.href}
                                 className={clsx(
-                                    "relative px-4 py-2.5 text-sm font-medium transition-colors duration-300",
+                                    "relative px-4 py-2.5 text-base font-semibold transition-colors duration-300",
                                     active
                                         ? "text-accent"
                                         : "text-foreground/60 hover:text-foreground"
@@ -111,7 +125,7 @@ export default function Topbar() {
                 {/* Right side actions */}
                 <div className="flex items-center gap-4 ml-auto">
                     <div className="hidden lg:flex items-center pr-4 border-r border-border">
-                        <button 
+                        <button
                             onClick={toggleTheme}
                             className="relative w-12 h-6 flex items-center bg-background rounded-full p-1 cursor-pointer transition-colors duration-300 hover:bg-border/50 focus:outline-none shadow-inner border border-border/50"
                             aria-label="Toggle dark mode"
@@ -122,7 +136,7 @@ export default function Topbar() {
                             <span className="absolute right-1.5 flex items-center justify-center text-foreground/50 z-10">
                                 <Moon size={12} className="stroke-[2.5]" />
                             </span>
-                            <motion.div 
+                            <motion.div
                                 className="w-4 h-4 bg-surface rounded-full shadow-sm relative z-20 flex items-center justify-center border border-border/50"
                                 animate={{ x: isDarkMode ? 24 : 0 }}
                                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -131,11 +145,11 @@ export default function Topbar() {
                     </div>
 
                     <div className="relative" ref={profileRef}>
-                        <button 
+                        <button
                             onClick={() => setIsProfileOpen(!isProfileOpen)}
                             className="flex items-center gap-2 pl-1 group focus:outline-none"
                         >
-                            <motion.div 
+                            <motion.div
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 className="h-8 w-8 rounded-full bg-background overflow-hidden shadow-sm ring-2 ring-transparent group-hover:ring-accent/30 transition-all duration-300"
@@ -153,10 +167,10 @@ export default function Topbar() {
                                 <ChevronDown size={14} className="text-foreground/50 group-hover:text-accent transition-colors duration-300" />
                             </motion.div>
                         </button>
-                        
+
                         <AnimatePresence>
                             {isProfileOpen && (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -171,16 +185,16 @@ export default function Topbar() {
                                         </p>
                                     </div>
                                     <div className="px-2">
-                                        <Link 
-                                            href="/users" 
-                                            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground/80 rounded-xl hover:bg-accent/10 hover:text-accent transition-colors duration-200" 
+                                        <Link
+                                            href="/users"
+                                            className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-foreground/80 rounded-xl hover:bg-accent/10 hover:text-accent transition-colors duration-200"
                                             onClick={() => setIsProfileOpen(false)}
                                         >
                                             <Users size={16} className="stroke-[1.5]" /> User Management
                                         </Link>
                                     </div>
                                     <div className="px-2 mt-1 border-t border-border pt-1">
-                                        <button 
+                                        <button
                                             onClick={() => { setIsProfileOpen(false); logout(); }}
                                             className="flex w-full items-center gap-3 px-3 py-2 text-sm font-medium text-destructive rounded-xl hover:bg-destructive/10 transition-colors duration-200"
                                         >

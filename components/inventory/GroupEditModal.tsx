@@ -99,11 +99,9 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
                         <div className="col-span-3">
                             <Select
                                 options={[
-                                    { value: 'kg', label: 'kg' },
-                                    { value: 'g', label: 'g' },
-                                    { value: 'pcs', label: 'pcs' },
                                     { value: 'Nos', label: 'Nos' },
-                                    { value: 'ltr', label: 'ltr' },
+                                    { value: 'roll', label: 'roll' },
+                                    { value: 'bundle', label: 'bundle' },
                                 ]}
                                 value={variant.unit || 'kg'}
                                 onChange={(val) => handleUnitChange(variant.id, val)}

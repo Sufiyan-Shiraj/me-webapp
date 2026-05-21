@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Users } from 'lucide-react';
 import { CustomerModal } from './CustomerModal';
+import Link from 'next/link';
 
 interface TransactionSummaryProps {
     transactionCount: number;
@@ -22,18 +23,21 @@ export default function TransactionSummary({ transactionCount, customerCount }: 
             </div>
             
             <div className="space-y-4">
-                {/* Transactions */}
-                <div className="flex items-center justify-between pb-3 border-b border-border/50 group">
+                {/* Shipments */}
+                <Link 
+                    href="/sales"
+                    className="flex items-center justify-between pb-3 border-b border-border/50 group cursor-pointer"
+                >
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-surface border border-border shadow-sm text-foreground/70 group-hover:text-accent transition-colors">
+                        <div className="p-2 rounded-xl bg-surface border border-border shadow-sm text-foreground/70 group-hover:bg-accent/10 group-hover:border-accent/20 group-hover:text-accent transition-colors">
                             <ShoppingCart size={16} className="stroke-[1.5]" />
                         </div>
-                        <span className="text-sm font-semibold text-foreground/80 group-hover:text-foreground transition-colors">Total Sales</span>
+                        <span className="text-sm font-semibold text-foreground/80 group-hover:text-foreground transition-colors">Total Shipments</span>
                     </div>
                     <div className="text-right">
                         <div className="text-xl font-bold tracking-tight text-foreground">{transactionCount.toLocaleString()}</div>
                     </div>
-                </div>
+                </Link>
 
                 {/* Customers */}
                 <div 
