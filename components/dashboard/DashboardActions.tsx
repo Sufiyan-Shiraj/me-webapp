@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { ProductModal } from '@/components/inventory/ProductModal';
-import { SaleModal } from '@/components/sales/SaleModal';
+import { NewSaleModal } from '@/components/sales/NewSaleModal';
+import { OrderModal } from '@/components/sales/OrderModal';
 import { InventoryItem } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import { saveInventory } from '@/lib/actions/inventoryActions';
@@ -18,7 +19,8 @@ interface ProductGroup {
 export default function DashboardActions() {
     const router = useRouter();
     const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-    const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
+    const [isShipmentModalOpen, setIsShipmentModalOpen] = useState(false);
+    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [groups, setGroups] = useState<ProductGroup[]>([]);
 
     useEffect(() => {
@@ -96,16 +98,22 @@ export default function DashboardActions() {
         }
     };
 
-    const handleSaleSubmit = () => {
-        alert(`Sale recorded successfully!`);
+    const handleShipmentSubmit = () => {
+        setIsShipmentModalOpen(false);
+        router.refresh();
+    };
+
+    const handleOrderSubmit = () => {
+        setIsOrderModalOpen(false);
         router.refresh();
     };
 
     return (
         <>
-            <div className="flex gap-3">
-                <Button variant="secondary" size="sm" icon={Plus} onClick={() => setIsProductModalOpen(true)}>Add Product</Button>
-                <Button variant="primary" size="sm" icon={Plus} onClick={() => setIsSaleModalOpen(true)}>New Sale</Button>
+            <div className="flex flex-wrap gap-3">
+                <Button variant="secondary" size="sm" icon={Plus} onClick={() => setIsProductModalOpen(true)}>Add Item</Button>
+                <Button variant="secondary" size="sm" icon={Plus} onClick={() => setIsOrderModalOpen(true)}>New Order</Button>
+                <Button variant="primary" size="sm" icon={Plus} onClick={() => setIsShipmentModalOpen(true)}>Create Shipment</Button>
             </div>
 
             <ProductModal
@@ -115,10 +123,16 @@ export default function DashboardActions() {
                 groups={groups}
             />
 
-            <SaleModal
-                isOpen={isSaleModalOpen}
-                onClose={() => setIsSaleModalOpen(false)}
-                onSubmit={handleSaleSubmit}
+            <OrderModal
+                isOpen={isOrderModalOpen}
+                onClose={() => setIsOrderModalOpen(false)}
+                onSubmit={handleOrderSubmit}
+            />
+
+            <NewSaleModal
+                isOpen={isShipmentModalOpen}
+                onClose={() => setIsShipmentModalOpen(false)}
+                onSubmit={handleShipmentSubmit}
             />
         </>
     );
