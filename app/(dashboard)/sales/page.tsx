@@ -6,7 +6,7 @@ import { TablePagination } from '@/components/ui/TablePagination';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Plus, Search, FileText, Download, Trash2, Box } from 'lucide-react';
+import { Plus, Search, FileText, Download, Trash2, Box, Edit2 } from 'lucide-react';
 import { Sale, SaleItem } from '@/lib/types';
 import clsx from 'clsx';
 import styles from '@/components/ui/ui.module.css';
@@ -31,9 +31,10 @@ interface ExtendedSale extends Sale {
 interface SaleRowProps {
     sale: ExtendedSale;
     onDeleteSale?: (saleId: number) => void;
+    onEditSale?: (sale: ExtendedSale) => void;
 }
 
-const SaleRow = ({ sale, onDeleteSale }: SaleRowProps) => {
+const SaleRow = ({ sale, onDeleteSale, onEditSale }: SaleRowProps) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const locations = useMemo(() => {
@@ -94,6 +95,9 @@ const SaleRow = ({ sale, onDeleteSale }: SaleRowProps) => {
                     <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                         <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="View details" onClick={() => setIsOpen(!isOpen)}>
                             <FileText size={20} />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-blue-600 hover:bg-blue-50 rounded-full" title="Edit Shipment" onClick={() => onEditSale?.(sale)}>
+                            <Edit2 size={20} />
                         </Button>
                         <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-destructive hover:bg-destructive/10 rounded-full" title="Delete Sale" onClick={() => onDeleteSale?.(sale.sale_id)}>
                             <Trash2 size={20} />
@@ -173,6 +177,8 @@ export default function ShipmentsPage() {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedSaleToEdit, setSelectedSaleToEdit] = useState<ExtendedSale | null>(null);
 
     useEffect(() => {
         fetchSales();
@@ -192,6 +198,7 @@ export default function ShipmentsPage() {
                         id,
                         quantity,
                         me_orders (
+                            id,
                             order_id,
                             place,
                             created_at,
@@ -217,7 +224,7 @@ export default function ShipmentsPage() {
                     return {
                         id: itemRow.id,
                         sale_id: row.id,
-                        order_item_id: 'unknown', 
+                        order_item_id: order?.id || 'unknown', 
                         quantity: itemRow.quantity,
                         product_name: baseItem?.name || 'Unknown Product',
                         variant: itemType?.name || 'Standard',
@@ -257,6 +264,11 @@ export default function ShipmentsPage() {
             console.error("Error deleting shipment:", error);
             alert(error.message || "Failed to delete shipment.");
         }
+    };
+
+    const handleEditSale = (sale: ExtendedSale) => {
+        setSelectedSaleToEdit(sale);
+        setIsEditModalOpen(true);
     };
 
     const filteredData = useMemo(() => {
@@ -330,7 +342,7 @@ export default function ShipmentsPage() {
                         <Button variant="secondary" className="h-11 rounded-xl px-5 font-semibold" icon={Download} onClick={() => setIsExportModalOpen(true)}>
                             Export CSV
                         </Button>
-                        <Button variant="primary" className="h-11 rounded-xl px-5 font-semibold" icon={Box} onClick={() => setIsModalOpen(true)}>
+                        <Button variant="primary" className="h-11 rounded-xl px-5 font-semibold" icon={Box} onClick={() => { setSelectedSaleToEdit(null); setIsModalOpen(true); }}>
                             Create Shipment
                         </Button>
                     </div>
@@ -362,6 +374,7 @@ export default function ShipmentsPage() {
                                 key={sale.sale_id}
                                 sale={sale}
                                 onDeleteSale={handleDeleteSale}
+                                onEditSale={handleEditSale}
                             />
                         ))
                     ) : (
@@ -371,7 +384,7 @@ export default function ShipmentsPage() {
                                     variant={searchQuery ? "no-results" : "no-data"}
                                     title={searchQuery ? "No shipments found" : "No shipments yet"}
                                     description="Create a shipment from pending orders."
-                                    action={!searchQuery ? { label: "Create Shipment", onClick: () => setIsModalOpen(true) } : undefined}
+                                    action={!searchQuery ? { label: "Create Shipment", onClick: () => { setSelectedSaleToEdit(null); setIsModalOpen(true); } } : undefined}
                                 />
                             </TableCell>
                         </TableRow>
@@ -392,7 +405,12 @@ export default function ShipmentsPage() {
                 </div>
             )}
 
-            <NewSaleModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={fetchSales} />
+            <NewSaleModal 
+                isOpen={isModalOpen || isEditModalOpen} 
+                onClose={() => { setIsModalOpen(false); setIsEditModalOpen(false); setSelectedSaleToEdit(null); }} 
+                onSubmit={fetchSales} 
+                editSale={selectedSaleToEdit} 
+            />
             <GenericExportModal 
                 isOpen={isExportModalOpen} 
                 onClose={() => setIsExportModalOpen(false)} 

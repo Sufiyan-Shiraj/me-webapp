@@ -112,10 +112,11 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, order }: EditOrderMo
     const handleRemoveRow = (id: string) => {
         const rowToRemove = rows.find(r => r.id === id);
         if (rowToRemove && !rowToRemove.isNew) {
-            // Can only remove if completely unfulfilled
+            // Can only remove if completely unfulfilled, but allow override if data is out of sync
             if (rowToRemove.originalQuantity !== rowToRemove.originalPending) {
-                alert("Cannot remove an item that has already been partially or fully fulfilled.");
-                return;
+                if (!window.confirm("This item appears to have been partially or fully fulfilled. Are you sure you want to remove it?")) {
+                    return;
+                }
             }
         }
         
@@ -155,8 +156,9 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, order }: EditOrderMo
             if (!row.isNew) {
                 const fulfilled = row.originalQuantity! - row.originalPending!;
                 if (row.quantity < fulfilled) {
-                    alert(`Cannot reduce quantity below the amount already fulfilled (${fulfilled}) for item.`);
-                    return;
+                    if (!window.confirm(`Item quantity is being reduced below the amount already fulfilled (${fulfilled}). This may cause inconsistencies. Do you want to proceed?`)) {
+                        return;
+                    }
                 }
             }
         }
@@ -178,7 +180,7 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, order }: EditOrderMo
                     });
                 } else {
                     const fulfilled = row.originalQuantity! - row.originalPending!;
-                    const newPending = row.quantity - fulfilled;
+                    const newPending = Math.max(0, row.quantity - fulfilled);
                     itemsToUpdate.push({
                         id: row.id,
                         item_type_id: row.itemTypeId,

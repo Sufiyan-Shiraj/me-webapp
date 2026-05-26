@@ -7,25 +7,29 @@ import { Button } from '@/components/ui/Button';
 import { supabase } from '@/lib/supabase';
 import { Select } from '@/components/ui/Select';
 import { createSale } from '@/lib/actions/newSalesActions';
+import { updateSaleShipment } from '@/lib/actions/newSalesActions';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search } from 'lucide-react';
+import { Search, Info } from 'lucide-react';
 
 interface NewSaleModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: () => void;
+    editSale?: any; // ExtendedSale
 }
 
 interface PendingOrderItem {
-    id: string;
+    id: string; // me_orders.id
+    sale_item_id?: string; // me_sale_items.id if it's already in the shipment
     order_id: number;
     date: string;
     product_name: string;
     variant: string;
     total_quantity: number;
-    pending_quantity: number;
+    pending_quantity: number; // This acts as the max allowed for fulfillment
     place: string;
     fulfillment: number;
+    original_fulfillment: number;
 }
 
 const DISTANCES_TO_EDATHALA: Record<string, number> = {
@@ -45,24 +49,28 @@ const DISTANCES_TO_EDATHALA: Record<string, number> = {
     'Kasaragod': 350
 };
 
-export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
+export function NewSaleModal({ isOpen, onClose, onSubmit, editSale }: NewSaleModalProps) {
     const [customers, setCustomers] = useState<{id: string, name: string}[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [pendingItems, setPendingItems] = useState<PendingOrderItem[]>([]);
     const [isFetching, setIsFetching] = useState(false);
     
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState('date-asc'); // date-asc, date-desc, qty-desc, qty-asc, dist-desc, dist-asc
+    const [sortBy, setSortBy] = useState('date-asc');
 
     useEffect(() => {
         if (isOpen) {
             fetchCustomers();
-            setSelectedCustomer('');
+            if (editSale) {
+                setSelectedCustomer(editSale.customer_id);
+            } else {
+                setSelectedCustomer('');
+            }
             setPendingItems([]);
             setSearchQuery('');
             setSortBy('date-asc');
         }
-    }, [isOpen]);
+    }, [isOpen, editSale]);
 
     useEffect(() => {
         if (selectedCustomer) {
@@ -73,7 +81,6 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
     }, [selectedCustomer]);
 
     const fetchCustomers = async () => {
-        setIsFetching(true);
         try {
             const { data, error } = await supabase
                 .from('customers')
@@ -83,8 +90,6 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
             if (data) setCustomers(data);
         } catch (error) {
             console.error("Error fetching customers:", error);
-        } finally {
-            setIsFetching(false);
         }
     };
 
@@ -110,11 +115,13 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
 
             if (error) throw error;
 
-            const items: PendingOrderItem[] = orders?.map((row: any) => {
+            const itemsMap = new Map<string, PendingOrderItem>();
+
+            orders?.forEach((row: any) => {
                 const itemType = row.me_item_types && !Array.isArray(row.me_item_types) ? row.me_item_types : null;
                 const baseItem = itemType?.me_items && !Array.isArray(itemType.me_items) ? itemType.me_items : null;
 
-                return {
+                itemsMap.set(row.id, {
                     id: row.id,
                     order_id: row.order_id,
                     date: row.created_at,
@@ -123,11 +130,39 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
                     total_quantity: row.quantity,
                     pending_quantity: row.pending,
                     place: row.place || '',
-                    fulfillment: 0
-                };
-            }) || [];
+                    fulfillment: 0,
+                    original_fulfillment: 0
+                });
+            });
 
-            setPendingItems(items);
+            if (editSale) {
+                editSale.items.forEach((saleItem: any) => {
+                    if (itemsMap.has(saleItem.order_item_id)) {
+                        const existing = itemsMap.get(saleItem.order_item_id)!;
+                        existing.sale_item_id = saleItem.id;
+                        existing.pending_quantity += saleItem.quantity; // Increase max allowed by what's already shipped
+                        existing.fulfillment = saleItem.quantity;
+                        existing.original_fulfillment = saleItem.quantity;
+                    } else if (saleItem.order_item_id !== 'unknown') {
+                        // Order was fully fulfilled, add it back to the list
+                        itemsMap.set(saleItem.order_item_id, {
+                            id: saleItem.order_item_id,
+                            sale_item_id: saleItem.id,
+                            order_id: saleItem.order_id,
+                            date: saleItem.date,
+                            product_name: saleItem.product_name,
+                            variant: saleItem.variant,
+                            total_quantity: saleItem.quantity, // Estimate
+                            pending_quantity: saleItem.quantity, // Max allowed is what's currently shipped since it was fully fulfilled
+                            place: saleItem.place,
+                            fulfillment: saleItem.quantity,
+                            original_fulfillment: saleItem.quantity
+                        });
+                    }
+                });
+            }
+
+            setPendingItems(Array.from(itemsMap.values()));
         } catch (error) {
             console.error("Error fetching pending orders:", error);
         } finally {
@@ -154,42 +189,48 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
             return;
         }
 
-        const itemsToFulfill = pendingItems.filter(item => item.fulfillment > 0);
-        if (itemsToFulfill.length === 0) {
+        const itemsPayload = pendingItems
+            .filter(item => item.fulfillment > 0 || item.original_fulfillment > 0)
+            .map(item => ({
+                id: item.sale_item_id,
+                order_item_id: item.id,
+                quantity: item.fulfillment,
+                original_quantity: item.original_fulfillment,
+                current_pending: item.pending_quantity
+            }));
+
+        if (itemsPayload.filter(i => i.quantity > 0).length === 0) {
             alert("Please specify fulfillment quantity for at least one item.");
             return;
         }
 
         setIsFetching(true);
         try {
-            let nextSaleId = 1000;
-            const { data: maxSale } = await supabase
-                .from('me_sales')
-                .select('sale_id')
-                .order('sale_id', { ascending: false })
-                .limit(1)
-                .single();
-            
-            if (maxSale && maxSale.sale_id) {
-                nextSaleId = Number(maxSale.sale_id) + 1;
-            }
+            if (editSale) {
+                const res = await updateSaleShipment(editSale.sale_id, itemsPayload as any);
+                if (!res.success) throw new Error(res.error);
+            } else {
+                let nextSaleId = 1000;
+                const { data: maxSale } = await supabase
+                    .from('me_sales')
+                    .select('sale_id')
+                    .order('sale_id', { ascending: false })
+                    .limit(1)
+                    .single();
+                
+                if (maxSale && maxSale.sale_id) {
+                    nextSaleId = Number(maxSale.sale_id) + 1;
+                }
 
-            const itemsPayload = itemsToFulfill.map(item => ({
-                order_item_id: item.id,
-                quantity: item.fulfillment,
-                current_pending: item.pending_quantity
-            }));
-
-            const res = await createSale(nextSaleId, selectedCustomer, itemsPayload);
-            if (!res.success) {
-                throw new Error(res.error);
+                const res = await createSale(nextSaleId, selectedCustomer, itemsPayload as any);
+                if (!res.success) throw new Error(res.error);
             }
 
             onSubmit();
             onClose();
         } catch (error: any) {
-            console.error("Failed to create shipment:", error);
-            alert(error.message || "Failed to create shipment.");
+            console.error("Failed to save shipment:", error);
+            alert(error.message || "Failed to save shipment.");
         } finally {
             setIsFetching(false);
         }
@@ -250,8 +291,8 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="Create Shipment"
-            description="Fulfill pending orders to create a shipment."
+            title={editSale ? `Edit Shipment #${editSale.sale_id}` : "Create Shipment"}
+            description={editSale ? "Adjust shipped quantities or add new items to this shipment." : "Fulfill pending orders to create a shipment."}
             footer={
                 <>
                     <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -259,7 +300,7 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
                         onClick={handleSubmit} 
                         disabled={isFetching || pendingItems.filter(i => i.fulfillment > 0).length === 0}
                     >
-                        Create Shipment
+                        {editSale ? "Update Shipment" : "Create Shipment"}
                     </Button>
                 </>
             }
@@ -275,15 +316,22 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
                         value={selectedCustomer}
                         onChange={setSelectedCustomer}
                         placeholder="Select customer..."
+                        disabled={!!editSale}
                     />
                 </div>
 
                 {selectedCustomer && (
                     <div className="space-y-3">
+                        {editSale && (
+                            <div className="bg-blue-50 text-blue-700 p-3 rounded-xl text-sm flex items-start gap-2 mb-2">
+                                <Info size={16} className="mt-0.5 shrink-0" />
+                                <p>You are editing an existing shipment. Items already in this shipment are pre-filled below. You can also add new items from the customer's pending orders.</p>
+                            </div>
+                        )}
                         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                             <div>
                                 <label className="text-[10px] font-bold text-foreground/50 uppercase tracking-wider block mb-1">
-                                    Pending Orders
+                                    Orders to Ship
                                 </label>
                                 <div className="relative w-full sm:w-64">
                                     <Input
@@ -312,7 +360,7 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
                         </div>
 
                         {isFetching && pendingItems.length === 0 ? (
-                            <div className="py-8 text-center text-gray-500 text-sm">Loading pending orders...</div>
+                            <div className="py-8 text-center text-gray-500 text-sm">Loading orders...</div>
                         ) : pendingItems.length === 0 ? (
                             <div className="py-8 text-center text-gray-500 text-sm bg-foreground/[0.02] rounded-xl border border-border/50">
                                 No pending orders found for this customer.
@@ -338,14 +386,14 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
                                                     {group.place && <span className="text-[9px] text-gray-400 uppercase tracking-wide bg-gray-100 px-1.5 py-0.5 rounded">{group.place}</span>}
                                                 </div>
                                                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                                    Order Pending <span className="text-sm font-mono text-orange-600">{group.total_pending}</span>
+                                                    Max Available <span className="text-sm font-mono text-orange-600">{group.total_pending}</span>
                                                 </div>
                                             </div>
 
                                             <div className="space-y-3">
                                                 {group.items.map(item => (
-                                                    <div key={item.id} className="grid grid-cols-12 gap-4 items-center">
-                                                        <div className="col-span-6 flex flex-col">
+                                                    <div key={item.id} className={`grid grid-cols-12 gap-4 items-center p-2 rounded-lg transition-colors ${item.fulfillment > 0 ? 'bg-blue-50/50 border border-blue-100/50' : ''}`}>
+                                                        <div className="col-span-6 flex flex-col pl-1">
                                                             <span className="text-sm font-semibold text-gray-900">{item.product_name}</span>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <span className="text-xs text-gray-500 font-medium">{item.variant}</span>
@@ -353,19 +401,19 @@ export function NewSaleModal({ isOpen, onClose, onSubmit }: NewSaleModalProps) {
                                                         </div>
                                                         
                                                         <div className="col-span-3 flex flex-col items-end justify-center h-full">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pending</span>
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Available</span>
                                                             <span className="text-sm font-mono font-bold text-orange-600">{item.pending_quantity}</span>
                                                         </div>
 
                                                         <div className="col-span-3 flex flex-col items-end justify-center h-full">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ship Qty</span>
+                                                            <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Ship Qty</span>
                                                             <Input
                                                                 type="number"
                                                                 min="0"
                                                                 max={item.pending_quantity}
                                                                 value={item.fulfillment || ''}
                                                                 onChange={(e) => handleFulfillmentChange(item.id, e.target.value)}
-                                                                className="w-full text-right font-mono"
+                                                                className={`w-full text-right font-mono ${item.fulfillment > 0 ? 'border-blue-300 bg-blue-50 text-blue-900 focus:ring-blue-500' : ''}`}
                                                                 placeholder="0"
                                                             />
                                                         </div>

@@ -110,3 +110,52 @@ export async function deleteSaleShipment(saleId: number) {
         return { success: false, error: error.message || 'Failed to delete shipment' };
     }
 }
+
+export async function updateSaleShipment(saleId: number, items: { id: string; order_item_id: string; quantity: number; original_quantity: number }[]) {
+    try {
+        const { data: saleData } = await supabaseAdmin
+            .from('me_sales')
+            .select('id')
+            .eq('sale_id', saleId)
+            .single();
+
+        if (!saleData) throw new Error("Sale not found");
+
+        for (const item of items) {
+            const diff = item.original_quantity - item.quantity;
+            
+            if (item.quantity === 0) {
+                // Remove item from shipment
+                const { error: delError } = await supabaseAdmin.from('me_sale_items').delete().eq('id', item.id);
+                if (delError) throw delError;
+            } else if (diff !== 0) {
+                // Update shipment quantity
+                const { error: updateError } = await supabaseAdmin.from('me_sale_items').update({ quantity: item.quantity }).eq('id', item.id);
+                if (updateError) throw updateError;
+            }
+
+            // Restore/deduct pending amount
+            if (diff !== 0 && item.order_item_id !== 'unknown') {
+                const { data: orderItem } = await supabaseAdmin.from('me_orders').select('pending').eq('id', item.order_item_id).single();
+                if (orderItem) {
+                    const newPending = Math.max(0, orderItem.pending + diff);
+                    await supabaseAdmin.from('me_orders').update({ pending: newPending, done: newPending === 0, done_time: newPending === 0 ? new Date().toISOString() : null }).eq('id', item.order_item_id);
+                }
+            }
+        }
+
+        // If no items remain, delete the sale
+        const { count } = await supabaseAdmin.from('me_sale_items').select('*', { count: 'exact', head: true }).eq('sale_id', saleData.id);
+        if (count === 0) {
+            await supabaseAdmin.from('me_sales').delete().eq('id', saleData.id);
+        }
+
+        revalidatePath('/sales');
+        revalidatePath('/orders');
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating sale shipment:', error);
+        return { success: false, error: error.message || 'Failed to update shipment' };
+    }
+}

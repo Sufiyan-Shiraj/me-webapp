@@ -29,9 +29,10 @@ interface OrderRowProps {
     order: OrderInvoice;
     onUpdateOrderPlace: (orderId: number, place: string) => void;
     onEditOrder: (order: OrderInvoice) => void;
+    onDeleteOrder: (orderId: number) => void;
 }
 
-const OrderRow = ({ order, onUpdateOrderPlace, onEditOrder }: OrderRowProps) => {
+const OrderRow = ({ order, onUpdateOrderPlace, onEditOrder, onDeleteOrder }: OrderRowProps) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const overallStatus = useMemo(() => {
@@ -74,6 +75,9 @@ const OrderRow = ({ order, onUpdateOrderPlace, onEditOrder }: OrderRowProps) => 
                     <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
                         <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="Edit Order" onClick={() => onEditOrder(order)}>
                             <Edit3 size={18} />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-red-600 hover:bg-red-50 rounded-full text-red-500" title="Delete Order" onClick={() => onDeleteOrder(order.order_id)}>
+                            <Trash2 size={18} />
                         </Button>
                     </div>
                 </TableCell>
@@ -305,6 +309,21 @@ export default function OrdersPage() {
             } : o));
         } catch (error) {
             console.error("Error updating place:", error);
+        }
+    };
+
+    const handleDeleteOrder = async (orderId: number) => {
+        if (!window.confirm("Are you sure you want to delete this order? This action cannot be undone.")) return;
+        try {
+            const res = await deleteOrder(orderId);
+            if (res.success) {
+                fetchOrders();
+            } else {
+                alert(res.error || "Failed to delete order");
+            }
+        } catch (error) {
+            console.error("Error deleting order:", error);
+            alert("Failed to delete order");
         }
     };
 
@@ -620,6 +639,7 @@ export default function OrdersPage() {
                                         setEditOrder(o);
                                         setIsEditModalOpen(true);
                                     }}
+                                    onDeleteOrder={handleDeleteOrder}
                                 />
                         ))
                     ) : (
