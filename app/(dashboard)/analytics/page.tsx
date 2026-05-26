@@ -1,160 +1,260 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import AnalyticsChart from '@/components/dashboard/AnalyticsChart';
 import { Select } from '@/components/ui/Select';
-import { Download, TrendingUp, Calendar } from 'lucide-react';
+import { Download, TrendingUp, AlertCircle, Package, Truck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { getAnalyticsData } from '@/lib/actions/analyticsActions';
+import clsx from 'clsx';
 
 export default function AnalyticsPage() {
-    const { user, isLoading } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
     const router = useRouter();
+    
     const [timeRange, setTimeRange] = useState('7d');
-    const [salesData, setSalesData] = useState<any[]>([]);
-    const [kpiStats, setKpiStats] = useState([
-        { label: 'Total Sales', value: '1,204', change: '+5.2%', trend: 'up' },
-        { label: 'Active Customers', value: '320', change: '+8.4%', trend: 'up' },
-    ]);
+    const [dataType, setDataType] = useState<'sales' | 'orders'>('orders');
+    
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    
+    const [trendData, setTrendData] = useState<any[]>([]);
+    const [categoryData, setCategoryData] = useState<any[]>([]);
+    const [topProducts, setTopProducts] = useState<any[]>([]);
+    const [kpiStats, setKpiStats] = useState<any[]>([]);
 
-    React.useEffect(() => {
-        if (!isLoading && user?.role !== 'admin') {
+    useEffect(() => {
+        if (!isAuthLoading && user?.role !== 'admin') {
             router.push('/dashboard');
         }
-    }, [user, isLoading, router]);
+    }, [user, isAuthLoading, router]);
 
-    if (isLoading || user?.role !== 'admin') {
-        return null; // Or a loading spinner
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            setError(null);
+            
+            const result = await getAnalyticsData(timeRange, dataType);
+            if (result.success) {
+                setTrendData(result.trendData || []);
+                setCategoryData(result.categoryData || []);
+                setTopProducts(result.topProducts || []);
+                setKpiStats(result.kpis || []);
+            } else {
+                setError(result.error || 'Failed to fetch analytics data');
+            }
+            
+            setIsLoading(false);
+        };
+
+        if (user?.role === 'admin') {
+            fetchData();
+        }
+    }, [timeRange, dataType, user]);
+
+    if (isAuthLoading || user?.role !== 'admin') {
+        return null;
     }
 
-    // Mock Data Generators
-    const generateRandomData = (range: string) => {
-        const days = range === '7d' ? 7 : range === '30d' ? 12 : 6; // 7 days, 12 sets (approx 30d), 6 months
-        const labels = range === '7d'
-            ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            : range === '30d'
-                ? Array.from({ length: 12 }, (_, i) => `Day ${i * 3 + 1}`)
-                : ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'];
-
-        return labels.map(label => ({
-            label,
-            value: Math.floor(Math.random() * 25000) + 10000,
-            color: '#06B6D4'
-        }));
-    };
-
-    const generateRandomKPIs = () => {
-        const randomPercent = () => (Math.random() * 15 - 5).toFixed(1);
-        const randomValue = (base: number) => Math.floor(base * (0.8 + Math.random() * 0.4)).toLocaleString('en-IN');
-        return [
-            { label: 'Total Sales', value: randomValue(1200), change: `${randomPercent()}%`, trend: Math.random() > 0.5 ? 'up' : 'down' },
-            { label: 'Active Customers', value: randomValue(300), change: `${randomPercent()}%`, trend: Math.random() > 0.5 ? 'up' : 'down' },
-        ];
-    };
-
-    // Effect to update data on range change
-    React.useEffect(() => {
-        setSalesData(generateRandomData(timeRange));
-        setKpiStats(generateRandomKPIs());
-    }, [timeRange]);
-
-    // Mock Data
-    const categoryData = [
-        { label: 'Electronics', value: 45, color: '#06B6D4' }, // Primary
-        { label: 'Accessories', value: 25, color: '#0EA5E9' }, // Accent
-        { label: 'Furniture', value: 20, color: '#8B5CF6' },   // Info
-        { label: 'Stationery', value: 10, color: '#10B981' }, // Success
-    ];
-
     return (
-        <div className="container mx-auto space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="container mx-auto space-y-6 animate-in fade-in duration-500">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-2">
                 <div>
-                    <h1 className="text-3xl font-sans font-bold tracking-tight text-white">Analytics Dashboard</h1>
-                    <p className="text-gray-400 mt-1">Deep dive into your business performance.</p>
+                    <h1 className="text-3xl font-sans font-bold tracking-tight text-foreground">Analytics Dashboard</h1>
+                    <p className="text-foreground/60 mt-1 text-sm font-medium">Deep dive into your business performance and fulfillment metrics.</p>
                 </div>
+                
+                {/* Data Type Tabs */}
+                <div className="flex bg-surface/60 backdrop-blur-xl p-1 rounded-xl border border-border self-start lg:self-center shadow-glass relative z-0">
+                    <button 
+                        onClick={() => setDataType('orders')}
+                        className={clsx(
+                            "flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 relative z-0",
+                            dataType === 'orders' ? "text-white" : "text-foreground/60 hover:text-foreground hover:bg-accent/5"
+                        )}
+                    >
+                        {dataType === 'orders' && (
+                            <motion.div layoutId="activeTab" className="absolute inset-0 bg-primary rounded-lg shadow-md -z-10" />
+                        )}
+                        <Package size={16} className={dataType === 'orders' ? 'text-white' : ''} />
+                        Orders
+                    </button>
+                    <button 
+                        onClick={() => setDataType('sales')}
+                        className={clsx(
+                            "flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300 relative z-0",
+                            dataType === 'sales' ? "text-white" : "text-foreground/60 hover:text-foreground hover:bg-accent/5"
+                        )}
+                    >
+                        {dataType === 'sales' && (
+                            <motion.div layoutId="activeTab" className="absolute inset-0 bg-primary rounded-lg shadow-md -z-10" />
+                        )}
+                        <Truck size={16} className={dataType === 'sales' ? 'text-white' : ''} />
+                        Shipments
+                    </button>
+                </div>
+
                 <div className="flex items-center gap-3">
-                    <div className="w-32">
+                    <div className="w-40">
                         <Select
                             options={[
                                 { value: '7d', label: 'Last 7 Days' },
                                 { value: '30d', label: 'Last 30 Days' },
-                                { value: '90d', label: 'Last 3 Months' }
+                                { value: '90d', label: 'Last 3 Months' },
+                                { value: 'all', label: 'All Time' }
                             ]}
                             value={timeRange}
                             onChange={setTimeRange}
                             placeholder="Time Range"
                         />
                     </div>
-                    <Button icon={Download} variant="secondary">Report</Button>
+                    <Button icon={Download} variant="secondary" className="font-semibold shadow-sm">Report</Button>
                 </div>
             </div>
 
+            {error && (
+                <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium border border-destructive/20">
+                    <AlertCircle size={18} /> {error}
+                </div>
+            )}
+
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {kpiStats.map((stat, i) => (
-                    <Card key={i} className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass group hover:border-primary/20 transition-all">
-                        <CardBody className="p-5">
-                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">{stat.label}</p>
-                            <div className="flex items-baseline gap-2">
-                                <h4 className="text-2xl font-bold text-white">{stat.value}</h4>
-                                <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${stat.trend === 'up' ? 'text-success bg-success/10' : 'text-destructive bg-destructive/10'}`}>
-                                    {stat.change}
-                                </span>
-                            </div>
-                        </CardBody>
-                    </Card>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="bg-surface/50 backdrop-blur-xl border border-white/5 shadow-glass h-[104px] animate-pulse rounded-2xl" />
+                    ))
+                ) : (
+                    <AnimatePresence mode="wait">
+                        {kpiStats.map((stat, i) => (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                transition={{ delay: i * 0.1, ease: 'easeOut', duration: 0.3 }}
+                                key={`${dataType}-${i}`}
+                            >
+                                <Card className="bg-surface/80 backdrop-blur-xl border border-border shadow-glass group hover:border-primary/40 hover:bg-surface transition-all duration-300 rounded-2xl">
+                                    <CardBody className="p-5">
+                                        <p className="text-xs font-bold text-foreground/60 uppercase tracking-wider mb-1.5">{stat.label}</p>
+                                        <div className="flex items-baseline gap-3">
+                                            <h4 className="text-3xl font-bold text-foreground tracking-tight">{stat.value}</h4>
+                                            {stat.change && (
+                                                <span className="text-[10px] font-semibold text-foreground/50 uppercase tracking-wide">
+                                                    {stat.change}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </CardBody>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                )}
             </div>
 
             {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
-                <AnalyticsChart title="Sales Trend (Weekly)" type="bar" data={salesData} />
-                <AnalyticsChart title="Sales by Category" type="pie" data={categoryData} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[400px]">
+                {isLoading ? (
+                    <>
+                        <div className="bg-surface/50 backdrop-blur-xl border border-white/5 shadow-glass h-full min-h-[400px] animate-pulse rounded-3xl" />
+                        <div className="bg-surface/50 backdrop-blur-xl border border-white/5 shadow-glass h-full min-h-[400px] animate-pulse rounded-3xl" />
+                    </>
+                ) : (
+                    <AnimatePresence mode="wait">
+                        <motion.div 
+                            key={`trend-${dataType}`}
+                            initial={{ opacity: 0, scale: 0.98 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            exit={{ opacity: 0 }}
+                            transition={{ delay: 0.1, duration: 0.3 }}
+                            className="h-full"
+                        >
+                            <AnalyticsChart 
+                                title={`Volume Trend (${timeRange === '7d' ? 'Weekly' : timeRange === 'all' ? 'All Time' : 'Monthly'})`} 
+                                type="bar" 
+                                data={trendData} 
+                            />
+                        </motion.div>
+                        <motion.div 
+                            key={`cat-${dataType}`}
+                            initial={{ opacity: 0, scale: 0.98 }} 
+                            animate={{ opacity: 1, scale: 1 }} 
+                            exit={{ opacity: 0 }}
+                            transition={{ delay: 0.2, duration: 0.3 }}
+                            className="h-full"
+                        >
+                            <AnalyticsChart 
+                                title="Volume by Category" 
+                                type="pie" 
+                                data={categoryData} 
+                            />
+                        </motion.div>
+                    </AnimatePresence>
+                )}
             </div>
 
             {/* Additional Section */}
-            <Card className="bg-surface backdrop-blur-xl border border-white/5 shadow-glass">
-                <CardHeader className="border-b border-white/5 flex flex-row items-center justify-between">
-                    <h3 className="text-sm font-semibold tracking-tight text-white uppercase flex items-center gap-2">
-                        <TrendingUp size={16} className="text-primary" /> Top Performing Products
-                    </h3>
-                    <Button variant="ghost" size="sm" className="text-primary">View All</Button>
-                </CardHeader>
-                <CardBody>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-xs text-gray-500 uppercase bg-white/5">
-                                <tr>
-                                    <th className="px-4 py-3 rounded-l-lg">Product Name</th>
-                                    <th className="px-4 py-3">Category</th>
-                                    <th className="px-4 py-3 text-right rounded-r-lg">Sales</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                <tr className="group hover:bg-white/5 transition-colors">
-                                    <td className="px-4 py-3 font-medium text-white">HDPE Granules - Natural</td>
-                                    <td className="px-4 py-3 text-gray-400">Polyethylene</td>
-                                    <td className="px-4 py-3 text-right text-white">1,240 kg</td>
-                                </tr>
-                                <tr className="group hover:bg-white/5 transition-colors">
-                                    <td className="px-4 py-3 font-medium text-white">LDPE Film Grade</td>
-                                    <td className="px-4 py-3 text-gray-400">Polyethylene</td>
-                                    <td className="px-4 py-3 text-right text-white">850 kg</td>
-                                </tr>
-                                <tr className="group hover:bg-white/5 transition-colors">
-                                    <td className="px-4 py-3 font-medium text-white">Polypropylene Homopolymer</td>
-                                    <td className="px-4 py-3 text-gray-400">Polypropylene</td>
-                                    <td className="px-4 py-3 text-right text-white">620 kg</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </CardBody>
-            </Card>
+            <AnimatePresence mode="wait">
+                {!isLoading && (
+                    <motion.div 
+                        key={`table-${dataType}`}
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ delay: 0.3, duration: 0.3 }}
+                    >
+                        <Card className="bg-surface/90 backdrop-blur-xl border border-border shadow-glass rounded-3xl overflow-hidden">
+                            <CardHeader className="border-b border-border flex flex-row items-center justify-between bg-accent/5 px-6 py-4">
+                                <h3 className="text-sm font-bold tracking-tight text-foreground uppercase flex items-center gap-2.5">
+                                    <TrendingUp size={16} className="text-primary" /> Top Performing Products (by Volume)
+                                </h3>
+                            </CardHeader>
+                            <CardBody className="p-0">
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="text-xs text-foreground/60 uppercase bg-black/5 dark:bg-black/20">
+                                            <tr>
+                                                <th className="px-6 py-3.5 font-semibold">Product Name</th>
+                                                <th className="px-6 py-3.5 font-semibold">Category / Variant</th>
+                                                <th className="px-6 py-3.5 font-semibold text-right">Volume {dataType === 'sales' ? 'Sold' : 'Ordered'}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {topProducts.length > 0 ? (
+                                                topProducts.map((product, idx) => (
+                                                    <tr key={idx} className="group hover:bg-accent/5 transition-colors">
+                                                        <td className="px-6 py-3.5 font-medium text-foreground">{product.name}</td>
+                                                        <td className="px-6 py-3.5">
+                                                            <span className="text-[10px] font-bold text-foreground/60 uppercase tracking-widest bg-accent/5 px-2 py-1 rounded-md">
+                                                                {product.category}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-3.5 text-right font-mono font-bold text-primary">
+                                                            {product.quantity.toLocaleString()} <span className="text-foreground/50 font-sans font-medium text-xs">units</span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={3} className="px-6 py-12 text-center text-foreground/60 font-medium">
+                                                        No products {dataType === 'sales' ? 'sold' : 'ordered'} in this time range.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

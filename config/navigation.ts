@@ -24,6 +24,11 @@ export const navItems = [
         icon: Truck
     },
     {
+        name: 'Analytics',
+        href: '/analytics',
+        icon: ShoppingCart
+    },
+    {
         name: 'User Management',
         href: '/users',
         icon: Users
