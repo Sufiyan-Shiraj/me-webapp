@@ -9,12 +9,8 @@ import { supabase } from '@/lib/supabase';
 import { Customer, OrderInvoice } from '@/lib/types';
 import { Select } from '@/components/ui/Select';
 import { updateFullOrder } from '@/lib/actions/ordersActions';
+import { getPlaces, createPlace } from '@/lib/actions/placesActions';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const KERALA_DISTRICTS = [
-    'Alappuzha', 'Ernakulam', 'Idukki', 'Kannur', 'Kasaragod', 'Kollam', 'Kottayam',
-    'Kozhikode', 'Malappuram', 'Palakkad', 'Pathanamthitta', 'Thiruvananthapuram', 'Thrissur', 'Wayanad'
-];
 
 interface EditOrderModalProps {
     isOpen: boolean;
@@ -35,6 +31,7 @@ interface OrderItemRow {
 export function EditOrderModal({ isOpen, onClose, onSubmit, order }: EditOrderModalProps) {
     const [customerInput, setCustomerInput] = useState(''); 
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [places, setPlaces] = useState<{id: string, name: string}[]>([]);
     
     const [inventory, setInventory] = useState<any[]>([]);
     const [rows, setRows] = useState<OrderItemRow[]>([]);
@@ -65,6 +62,11 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, order }: EditOrderMo
         try {
             const { data: custData } = await supabase.from('customers').select('*').eq('is_archived', false).order('name');
             if (custData) setCustomers(custData);
+
+            const placesRes = await getPlaces();
+            if (placesRes.success && placesRes.data) {
+                setPlaces(placesRes.data);
+            }
 
             const { data: invData } = await supabase
                 .from('me_item_types')
@@ -97,6 +99,20 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, order }: EditOrderMo
             console.error("Error fetching modal data:", error);
         } finally {
             setIsFetching(false);
+        }
+    };
+
+    const handleCreateOrderPlace = async (name: string) => {
+        try {
+            const res = await createPlace(name);
+            if (res.success && res.data) {
+                setPlaces(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)));
+                setOrderPlace(res.data.name);
+            } else {
+                alert("Failed to create place: " + res.error);
+            }
+        } catch (err) {
+            console.error("Error creating place", err);
         }
     };
 
@@ -256,8 +272,10 @@ export function EditOrderModal({ isOpen, onClose, onSubmit, order }: EditOrderMo
                         <Select
                             options={[
                                 { value: '', label: 'Select Delivery Location...' },
-                                ...KERALA_DISTRICTS.map(d => ({ value: d, label: d }))
+                                ...places.map(p => ({ value: p.name, label: p.name }))
                             ]}
+                            allowCreate
+                            onCreateOption={handleCreateOrderPlace}
                             value={orderPlace}
                             onChange={setOrderPlace}
                         />

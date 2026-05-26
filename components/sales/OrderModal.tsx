@@ -11,12 +11,8 @@ import { Customer } from '@/lib/types';
 import { Select } from '@/components/ui/Select';
 import { createCustomer } from '@/lib/actions/customerActions';
 import { createOrder } from '@/lib/actions/ordersActions';
+import { getPlaces, createPlace } from '@/lib/actions/placesActions';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const KERALA_DISTRICTS = [
-    'Alappuzha', 'Ernakulam', 'Idukki', 'Kannur', 'Kasaragod', 'Kollam', 'Kottayam',
-    'Kozhikode', 'Malappuram', 'Palakkad', 'Pathanamthitta', 'Thiruvananthapuram', 'Thrissur', 'Wayanad'
-];
 
 interface OrderModalProps {
     isOpen: boolean;
@@ -35,6 +31,7 @@ export function OrderModal({ isOpen, onClose, onSubmit }: OrderModalProps) {
     const [customerInput, setCustomerInput] = useState(''); 
     const [customerDistrict, setCustomerDistrict] = useState('');
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [places, setPlaces] = useState<{id: string, name: string}[]>([]);
     
     const [inventory, setInventory] = useState<any[]>([]);
     const [rows, setRows] = useState<OrderItemRow[]>([{ id: '1', itemTypeId: '', quantity: 0 }]);
@@ -72,6 +69,11 @@ export function OrderModal({ isOpen, onClose, onSubmit }: OrderModalProps) {
             const { data: custData } = await supabase.from('customers').select('*').eq('is_archived', false).order('name');
             if (custData) setCustomers(custData);
 
+            const placesRes = await getPlaces();
+            if (placesRes.success && placesRes.data) {
+                setPlaces(placesRes.data);
+            }
+
             const { data: invData } = await supabase
                 .from('me_item_types')
                 .select(`
@@ -103,6 +105,34 @@ export function OrderModal({ isOpen, onClose, onSubmit }: OrderModalProps) {
             console.error("Error fetching modal data:", error);
         } finally {
             setIsFetching(false);
+        }
+    };
+
+    const handleCreateCustomerDistrict = async (name: string) => {
+        try {
+            const res = await createPlace(name);
+            if (res.success && res.data) {
+                setPlaces(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)));
+                setCustomerDistrict(res.data.name);
+            } else {
+                alert("Failed to create place: " + res.error);
+            }
+        } catch (err) {
+            console.error("Error creating place", err);
+        }
+    };
+
+    const handleCreateOrderPlace = async (name: string) => {
+        try {
+            const res = await createPlace(name);
+            if (res.success && res.data) {
+                setPlaces(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)));
+                setOrderPlace(res.data.name);
+            } else {
+                alert("Failed to create place: " + res.error);
+            }
+        } catch (err) {
+            console.error("Error creating place", err);
         }
     };
 
@@ -270,9 +300,11 @@ export function OrderModal({ isOpen, onClose, onSubmit }: OrderModalProps) {
                                         />
                                         <Select
                                             options={[
-                                                { value: '', label: 'Select District (Optional)' },
-                                                ...KERALA_DISTRICTS.map(d => ({ value: d, label: d }))
+                                                { value: 'none', label: 'Select Place' },
+                                                ...places.map(p => ({ value: p.name, label: p.name }))
                                             ]}
+                                            allowCreate
+                                            onCreateOption={handleCreateCustomerDistrict}
                                             value={customerDistrict}
                                             onChange={setCustomerDistrict}
                                         />
@@ -295,8 +327,10 @@ export function OrderModal({ isOpen, onClose, onSubmit }: OrderModalProps) {
                             <Select
                                 options={[
                                     { value: '', label: 'Select Delivery Location...' },
-                                    ...KERALA_DISTRICTS.map(d => ({ value: d, label: d }))
+                                    ...places.map(p => ({ value: p.name, label: p.name }))
                                 ]}
+                                allowCreate
+                                onCreateOption={handleCreateOrderPlace}
                                 value={orderPlace}
                                 onChange={setOrderPlace}
                             />

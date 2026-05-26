@@ -3,15 +3,11 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Search, Plus, UserCircle2, Trash2, RotateCcw } from 'lucide-react';
-import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer, unarchiveCustomer, updateCustomerDistrict } from '@/lib/actions/customerActions';
+import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer, unarchiveCustomer, updateCustomerDistrict, updateCustomerName } from '@/lib/actions/customerActions';
+import { getPlaces, createPlace } from '@/lib/actions/placesActions';
 import { Customer } from '@/lib/types';
 import { Select } from '@/components/ui/Select';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const KERALA_DISTRICTS = [
-    'Alappuzha', 'Ernakulam', 'Idukki', 'Kannur', 'Kasaragod', 'Kollam', 'Kottayam',
-    'Kozhikode', 'Malappuram', 'Palakkad', 'Pathanamthitta', 'Thiruvananthapuram', 'Thrissur', 'Wayanad'
-];
 
 interface CustomerModalProps {
     isOpen: boolean;
@@ -23,6 +19,9 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState('');
+    const [places, setPlaces] = useState<{id: string, name: string}[]>([]);
 
     useEffect(() => {
         if (isOpen) {
@@ -37,6 +36,11 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
             const res = await getCustomers();
             if (res.success && res.data) {
                 setCustomers(res.data);
+            }
+            
+            const placesRes = await getPlaces();
+            if (placesRes.success && placesRes.data) {
+                setPlaces(placesRes.data);
             }
         } catch (error) {
             console.error('Failed to fetch customers:', error);
@@ -108,6 +112,41 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
         }
     };
 
+    const handleCreateCustomerDistrict = async (name: string, customerId: string) => {
+        try {
+            const res = await createPlace(name);
+            if (res.success && res.data) {
+                setPlaces(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)));
+                await handleUpdateDistrict(customerId, res.data.name);
+            } else {
+                alert("Failed to create place: " + res.error);
+            }
+        } catch (err) {
+            console.error("Error creating place", err);
+        }
+    };
+
+    const handleSaveName = async (id: string) => {
+        if (!editingName.trim()) {
+            setEditingId(null);
+            return;
+        }
+        
+        const customer = customers.find(c => c.id === id);
+        if (customer && customer.name === editingName.trim()) {
+            setEditingId(null); // No change
+            return;
+        }
+
+        const res = await updateCustomerName(id, editingName);
+        if (res.success) {
+            await fetchCustomers();
+            setEditingId(null);
+        } else {
+            alert(res.error || "Failed to update name");
+        }
+    };
+
     const filteredCustomers = customers.filter(c => {
         const query = searchTerm.toLowerCase().trim();
         if (query === 'archived') {
@@ -127,6 +166,7 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
             onClose={onClose}
             title="Active & Archived Customers"
             description="View and manage active customers, or search 'archived' to manage archived records."
+            maxWidth="max-w-3xl"
             footer={
                 <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
                     Close
@@ -164,21 +204,48 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
                                             <UserCircle2 size={16} />
                                         </div>
                                         <div className="flex-1 min-w-0 flex items-center gap-2">
-                                            <h4 className="text-sm font-bold text-foreground truncate">{customer.name}</h4>
+                                            {editingId === customer.id ? (
+                                                <div className="flex-1 max-w-[200px]">
+                                                    <Input
+                                                        autoFocus
+                                                        className="h-8 text-sm font-bold bg-white"
+                                                        value={editingName}
+                                                        onChange={(e) => setEditingName(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleSaveName(customer.id);
+                                                            if (e.key === 'Escape') setEditingId(null);
+                                                        }}
+                                                        onBlur={() => handleSaveName(customer.id)}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <h4 
+                                                    className="text-sm font-bold text-foreground cursor-pointer hover:text-accent transition-colors break-words"
+                                                    title="Click to edit"
+                                                    onClick={() => {
+                                                        setEditingId(customer.id);
+                                                        setEditingName(customer.name);
+                                                    }}
+                                                >
+                                                    {customer.name}
+                                                </h4>
+                                            )}
                                             {customer.is_archived && (
                                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100/80 border border-amber-200 text-amber-800 uppercase tracking-wide shrink-0">
                                                     Archived
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="w-32 shrink-0">
+                                        <div className="w-48 shrink-0">
                                             <Select
                                                 value={customer.district || 'none'}
                                                 onChange={(val) => handleUpdateDistrict(customer.id, val as string)}
                                                 options={[
-                                                    { value: 'none', label: 'Select District' },
-                                                    ...KERALA_DISTRICTS.map(d => ({ value: d, label: d }))
+                                                    { value: 'none', label: 'Select Place' },
+                                                    ...places.map(p => ({ value: p.name, label: p.name }))
                                                 ]}
+                                                allowCreate
+                                                onCreateOption={(val) => handleCreateCustomerDistrict(val, customer.id)}
                                             />
                                         </div>
                                         {customer.is_archived ? (

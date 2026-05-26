@@ -14,10 +14,11 @@ interface ModalProps {
     description?: string;
     children: React.ReactNode;
     className?: string;
+    maxWidth?: string;
     footer?: React.ReactNode;
 }
 
-export function Modal({ isOpen, onClose, title, description, children, className, footer }: ModalProps) {
+export function Modal({ isOpen, onClose, title, description, children, className, maxWidth = "max-w-lg", footer }: ModalProps) {
     const overlayRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
 
@@ -69,7 +70,8 @@ export function Modal({ isOpen, onClose, title, description, children, className
                         exit={{ opacity: 0, scale: 0.95, y: 15 }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                         className={clsx(
-                            "relative w-full max-w-lg transform rounded-[2rem] border border-border/50 bg-surface shadow-2xl flex flex-col max-h-[90vh]",
+                            "relative w-full transform rounded-[2rem] border border-border/50 bg-surface shadow-2xl flex flex-col max-h-[90vh]",
+                            maxWidth,
                             className
                         )}
                     >

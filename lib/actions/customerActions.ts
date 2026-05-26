@@ -10,7 +10,7 @@ const supabaseAdmin = createClient(
 
 export async function createCustomer(name: string, district?: string) {
     try {
-        const payload: any = { name: name.trim() };
+        const payload: any = { name: name.trim().toUpperCase() };
         if (district) payload.district = district;
 
         const { data, error } = await supabaseAdmin
@@ -77,6 +77,24 @@ export async function updateCustomerDistrict(id: string, district: string | null
     } catch (error: any) {
         console.error('Error updating customer district:', error);
         return { success: false, error: error.message || 'Failed to update district' };
+    }
+}
+
+export async function updateCustomerName(id: string, name: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('customers')
+            .update({ name: name.trim().toUpperCase() })
+            .eq('id', id);
+
+        if (error) throw error;
+
+        revalidatePath('/sales');
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating customer name:', error);
+        return { success: false, error: error.message || 'Failed to update name' };
     }
 }
 

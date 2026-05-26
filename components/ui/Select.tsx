@@ -17,9 +17,11 @@ interface SelectProps {
     className?: string;
     placeholder?: string;
     disabled?: boolean;
+    allowCreate?: boolean;
+    onCreateOption?: (inputValue: string) => void;
 }
 
-export function Select({ options, value, onChange, className, placeholder = "Select...", disabled = false }: SelectProps) {
+export function Select({ options, value, onChange, className, placeholder = "Select...", disabled = false, allowCreate = false, onCreateOption }: SelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, renderUpwards: false });
@@ -158,10 +160,34 @@ export function Select({ options, value, onChange, className, placeholder = "Sel
                                     {option.value === value && <Check size={14} />}
                                 </button>
                             ))
+                        ) : allowCreate && searchQuery.trim() !== '' ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (onCreateOption) onCreateOption(searchQuery.trim());
+                                    setIsOpen(false);
+                                }}
+                                className="w-full flex items-center justify-start gap-2 px-3 py-2.5 text-sm rounded-xl transition-colors text-left text-accent hover:bg-accent/10"
+                            >
+                                <span className="font-semibold">+ Add "{searchQuery.trim()}"</span>
+                            </button>
                         ) : (
                             <div className="px-3 py-4 text-center text-sm text-foreground/50 italic">
                                 No results found
                             </div>
+                        )}
+                        
+                        {allowCreate && searchQuery.trim() !== '' && filteredOptions.length > 0 && !options.some(o => o.label.toLowerCase() === searchQuery.trim().toLowerCase()) && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (onCreateOption) onCreateOption(searchQuery.trim());
+                                    setIsOpen(false);
+                                }}
+                                className="w-full flex items-center justify-start gap-2 px-3 py-2.5 mt-1 border-t border-border/30 text-sm rounded-xl transition-colors text-left text-accent hover:bg-accent/10"
+                            >
+                                <span className="font-semibold">+ Add "{searchQuery.trim()}"</span>
+                            </button>
                         )}
                     </div>
                 </div>,

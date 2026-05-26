@@ -19,20 +19,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { supabase } from '@/lib/supabase';
 import { updateOrderItem, deleteOrder } from '@/lib/actions/ordersActions';
-
-const KERALA_DISTRICTS = [
-    'Alappuzha', 'Ernakulam', 'Idukki', 'Kannur', 'Kasaragod', 'Kollam', 'Kottayam',
-    'Kozhikode', 'Malappuram', 'Palakkad', 'Pathanamthitta', 'Thiruvananthapuram', 'Thrissur', 'Wayanad'
-];
+import { getPlaces, createPlace } from '@/lib/actions/placesActions';
 
 interface OrderRowProps {
     order: OrderInvoice;
+    places: {id: string, name: string}[];
     onUpdateOrderPlace: (orderId: number, place: string) => void;
+    onCreateOrderPlace: (name: string, orderId: number) => void;
     onEditOrder: (order: OrderInvoice) => void;
     onDeleteOrder: (orderId: number) => void;
 }
 
-const OrderRow = ({ order, onUpdateOrderPlace, onEditOrder, onDeleteOrder }: OrderRowProps) => {
+const OrderRow = ({ order, places, onUpdateOrderPlace, onCreateOrderPlace, onEditOrder, onDeleteOrder }: OrderRowProps) => {
     const [isOpen, setIsOpen] = useState(false);
 
     const overallStatus = useMemo(() => {
@@ -65,9 +63,11 @@ const OrderRow = ({ order, onUpdateOrderPlace, onEditOrder, onDeleteOrder }: Ord
                 <TableCell className="w-48">
                     <div onClick={(e) => e.stopPropagation()} className="w-40">
                         <Select
-                            options={KERALA_DISTRICTS.map(d => ({ value: d, label: d }))}
+                            options={places.map(p => ({ value: p.name, label: p.name }))}
                             value={order.items[0]?.place || ''}
                             onChange={(val) => onUpdateOrderPlace(order.order_id, val as string)}
+                            allowCreate
+                            onCreateOption={(val) => onCreateOrderPlace(val, order.order_id)}
                         />
                     </div>
                 </TableCell>
@@ -139,6 +139,7 @@ const OrderRow = ({ order, onUpdateOrderPlace, onEditOrder, onDeleteOrder }: Ord
 
 export default function OrdersPage() {
     const [data, setData] = useState<OrderInvoice[]>([]);
+    const [places, setPlaces] = useState<{id: string, name: string}[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -222,7 +223,15 @@ export default function OrdersPage() {
     useEffect(() => {
         fetchOrders();
         fetchMetadata();
+        fetchPlaces();
     }, []);
+
+    const fetchPlaces = async () => {
+        const res = await getPlaces();
+        if (res.success && res.data) {
+            setPlaces(res.data);
+        }
+    };
 
     const fetchOrders = async () => {
         setIsLoading(true);
@@ -309,6 +318,22 @@ export default function OrdersPage() {
             } : o));
         } catch (error) {
             console.error("Error updating place:", error);
+        }
+    };
+
+    const handleCreateOrderPlace = async (name: string, orderId?: number) => {
+        try {
+            const res = await createPlace(name);
+            if (res.success && res.data) {
+                setPlaces(prev => [...prev, res.data].sort((a, b) => a.name.localeCompare(b.name)));
+                if (orderId) {
+                    await handleUpdateOrderPlace(orderId, res.data.name);
+                }
+            } else {
+                alert("Failed to create place: " + res.error);
+            }
+        } catch (err) {
+            console.error("Error creating place", err);
         }
     };
 
@@ -581,7 +606,7 @@ export default function OrdersPage() {
                                 <MapPin size={12} /> Location
                             </label>
                             <MultiSelect 
-                                options={KERALA_DISTRICTS.map(d => ({ value: d, label: d }))}
+                                options={places.map(p => ({ value: p.name, label: p.name }))}
                                 values={filters.place}
                                 onChange={(vals) => setFilters(f => ({ ...f, place: vals }))}
                             />
@@ -634,7 +659,9 @@ export default function OrdersPage() {
                                 <OrderRow
                                     key={inv.order_id}
                                     order={inv}
+                                    places={places}
                                     onUpdateOrderPlace={handleUpdateOrderPlace}
+                                    onCreateOrderPlace={handleCreateOrderPlace}
                                     onEditOrder={(o) => {
                                         setEditOrder(o);
                                         setIsEditModalOpen(true);
