@@ -10,7 +10,7 @@ import ActiveOrdersOverview from '@/components/dashboard/ActiveOrdersOverview';
 import Link from 'next/link';
 import { getDashboardStats } from '@/lib/actions/dashboardActions';
 import { getRecentActivity } from '@/lib/actions/activityActions';
-import { TrendingUp, ShoppingBag } from 'lucide-react';
+import { TrendingUp, ShoppingBag, Truck } from 'lucide-react';
 
 export const metadata: Metadata = {
     title: 'Dashboard - Sales & Inventory Manager',
@@ -33,27 +33,47 @@ export default async function DashboardPage() {
 
             {/* Unified Hero Stats Banner */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Link href="/orders" className="relative group overflow-hidden bg-gradient-to-br from-surface to-accent/[0.02] rounded-2xl p-6 border border-border shadow-float transition-all hover:shadow-lg hover:border-accent/30 flex flex-col justify-between min-h-[160px]">
-                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl group-hover:bg-accent/20 transition-colors duration-500" />
-                    <div className="relative z-10">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-semibold tracking-wide text-foreground/60 uppercase">Total Orders</h3>
-                            <div className="p-2 rounded-xl bg-accent/10 text-accent ring-1 ring-accent/20">
-                                <ShoppingBag size={18} className="stroke-[2]" />
+                <div className="relative overflow-hidden bg-gradient-to-br from-surface to-accent/[0.02] rounded-2xl border border-border shadow-float flex flex-col sm:flex-row min-h-[160px]">
+                    {/* Left: Total Orders */}
+                    <Link href="/orders" className="flex-1 p-6 relative flex flex-col justify-between border-b sm:border-b-0 sm:border-r border-border/50 group hover:bg-accent/[0.02] transition-colors cursor-pointer">
+                        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl group-hover:bg-accent/20 transition-colors duration-500" />
+                        <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-semibold tracking-wide text-foreground/60 uppercase">Total Orders</h3>
+                                <div className="p-2 rounded-xl bg-accent/10 text-accent ring-1 ring-accent/20 group-hover:bg-accent group-hover:text-white transition-colors duration-300">
+                                    <ShoppingBag size={18} className="stroke-[2]" />
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-3">
+                                <h2 className="text-5xl font-black tracking-tight text-foreground">{stats.orderCount.toLocaleString()}</h2>
                             </div>
                         </div>
-                        <div className="flex items-end gap-3">
-                            <h2 className="text-5xl font-black tracking-tight text-foreground">{stats.orderCount.toLocaleString()}</h2>
+                    </Link>
+
+                    {/* Right: Total Shipments */}
+                    <Link href="/shipments" className="flex-1 p-6 relative flex flex-col justify-between group hover:bg-accent/[0.02] transition-colors cursor-pointer">
+                        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl group-hover:bg-accent/20 transition-colors duration-500" />
+                        <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-sm font-semibold tracking-wide text-foreground/60 uppercase">Total Shipments</h3>
+                                <div className="p-2 rounded-xl bg-accent/10 text-accent ring-1 ring-accent/20 group-hover:bg-accent group-hover:text-white transition-colors duration-300">
+                                    <Truck size={18} className="stroke-[2]" />
+                                </div>
+                            </div>
+                            <div className="flex items-end gap-3">
+                                <h2 className="text-5xl font-black tracking-tight text-foreground">0</h2>
+                            </div>
                         </div>
-                    </div>
-                </Link>
+                    </Link>
+                </div>
 
                 <div className="relative group overflow-hidden bg-gradient-to-br from-surface to-accent/[0.02] rounded-2xl p-6 border border-border shadow-float min-h-[160px]">
                     <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-32 h-32 rounded-full bg-accent/5 blur-2xl group-hover:bg-accent/10 transition-colors duration-500" />
                     <div className="relative z-10 h-full">
-                        <TransactionSummary 
-                            transactionCount={stats.salesCount} 
+                        <TransactionSummary
+                            transactionCount={stats.salesCount}
                             customerCount={stats.customerCount}
+                            unitsSold={stats.totalUnitsSold}
                         />
                     </div>
                 </div>

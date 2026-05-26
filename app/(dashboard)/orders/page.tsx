@@ -152,7 +152,7 @@ export default function OrdersPage() {
     // Advanced Filters State
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filters, setFilters] = useState({
-        customer: 'all',
+        customer: [] as string[],
         item: 'all',
         variant: 'all',
         minQty: '',
@@ -360,7 +360,7 @@ export default function OrdersPage() {
             if (!matchesSearch) return false;
 
             // Customer Filter
-            if (filters.customer !== 'all' && inv.customer_name !== filters.customer) return false;
+            if (filters.customer.length > 0 && !filters.customer.includes(inv.customer_name)) return false;
 
             // Item and Variant Filters
             const matchesItems = inv.items.some(item => {
@@ -494,13 +494,21 @@ export default function OrdersPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Search size={12} /> Customer
                             </label>
-                            <Select 
-                                value={filters.customer}
-                                onChange={(val) => setFilters(f => ({ ...f, customer: val as string }))}
-                                options={[
-                                    { value: 'all', label: 'All Customers' },
-                                    ...filterOptions.customers.map(c => ({ value: c, label: c }))
-                                ]}
+                            <MultiSelect 
+                                values={filters.customer}
+                                placeholder="All Customers"
+                                onChange={(vals) => setFilters(f => {
+                                    if (vals.length > 0) {
+                                        const associatedPlaces = Array.from(new Set(
+                                            data.filter(inv => vals.includes(inv.customer_name))
+                                                .flatMap(inv => inv.items.map(i => i.place).filter(Boolean))
+                                        )) as string[];
+                                        return { ...f, customer: vals, place: associatedPlaces };
+                                    } else {
+                                        return { ...f, customer: [], place: [] };
+                                    }
+                                })}
+                                options={filterOptions.customers.map(c => ({ value: c, label: c }))}
                             />
                         </div>
 
@@ -608,7 +616,17 @@ export default function OrdersPage() {
                             <MultiSelect 
                                 options={places.map(p => ({ value: p.name, label: p.name }))}
                                 values={filters.place}
-                                onChange={(vals) => setFilters(f => ({ ...f, place: vals }))}
+                                onChange={(vals) => setFilters(f => {
+                                    if (vals.length > 0) {
+                                        const associatedCustomers = Array.from(new Set(
+                                            data.filter(inv => inv.items.some(i => i.place && vals.includes(i.place)))
+                                                .map(inv => inv.customer_name)
+                                        ));
+                                        return { ...f, place: vals, customer: associatedCustomers };
+                                    } else {
+                                        return { ...f, place: [], customer: [] };
+                                    }
+                                })}
                             />
                         </div>
 
@@ -618,7 +636,7 @@ export default function OrdersPage() {
                                 size="sm"
                                 className="h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100/80 rounded-xl"
                                 onClick={() => setFilters({
-                                    customer: 'all',
+                                    customer: [],
                                     item: 'all',
                                     variant: 'all',
                                     minQty: '',

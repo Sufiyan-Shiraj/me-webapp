@@ -103,6 +103,7 @@ export async function getDashboardStats() {
             salesCount: 0,
             orderCount: 0,
             customerCount: 0,
+            totalUnitsSold: 0,
             inventory: {
                 totalItems: 0,
                 totalQuantity: 0,

@@ -22,10 +22,12 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
     const [places, setPlaces] = useState<{id: string, name: string}[]>([]);
+    const [filterPlace, setFilterPlace] = useState('all');
 
     useEffect(() => {
         if (isOpen) {
             setSearchTerm('');
+            setFilterPlace('all');
             fetchCustomers();
         }
     }, [isOpen]);
@@ -148,6 +150,10 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
     };
 
     const filteredCustomers = customers.filter(c => {
+        const isUnlocated = !c.district || c.district === 'none';
+        if (filterPlace === 'none' && !isUnlocated) return false;
+        if (filterPlace !== 'all' && filterPlace !== 'none' && c.district !== filterPlace) return false;
+
         const query = searchTerm.toLowerCase().trim();
         if (query === 'archived') {
             return c.is_archived;
@@ -174,14 +180,28 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
             }
         >
             <div className="space-y-4">
-                <div className="relative group">
-                    <Input
-                        placeholder="Search customers (type 'archived' for soft-deleted)..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 h-11 bg-gray-50 border-border/50 focus:bg-background transition-all"
-                    />
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accent transition-colors" size={18} />
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative group flex-1">
+                        <Input
+                            placeholder="Search customers (type 'archived' for soft-deleted)..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-10 h-11 bg-gray-50 border-border/50 focus:bg-background transition-all"
+                        />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-accent transition-colors" size={18} />
+                    </div>
+                    <div className="w-full sm:w-48 shrink-0">
+                        <Select
+                            value={filterPlace}
+                            onChange={(val) => setFilterPlace(val as string)}
+                            options={[
+                                { value: 'all', label: 'All Locations' },
+                                { value: 'none', label: 'Unlocated' },
+                                ...places.map(p => ({ value: p.name, label: p.name }))
+                            ]}
+                            className="h-11 bg-gray-50 border-border/50 focus:bg-background"
+                        />
+                    </div>
                 </div>
 
                 <div className="bg-gray-50 rounded-2xl border border-border/50 overflow-hidden flex flex-col">

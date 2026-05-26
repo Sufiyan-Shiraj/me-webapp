@@ -4,8 +4,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Select } from '@/components/ui/Select';
+import { MultiSelect } from '@/components/ui/MultiSelect';
 import { Input } from '@/components/ui/Input';
-import { Box, ArrowUpRight, Search, Package } from 'lucide-react';
+import { Box, ArrowUpRight, Search, Package, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface RawOrderItem {
@@ -34,8 +35,10 @@ export default function ActiveOrdersOverview() {
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [sortMode, setSortMode] = useState<'qty_high' | 'qty_low' | 'alpha_asc' | 'alpha_desc'>('qty_high');
-    const [selectedCustomer, setSelectedCustomer] = useState<string>('all');
-    const [selectedPlace, setSelectedPlace] = useState<string>('all');
+    const [selectedCustomer, setSelectedCustomer] = useState<string[]>([]);
+    const [selectedPlace, setSelectedPlace] = useState<string[]>([]);
+    const [isCustomersExpanded, setIsCustomersExpanded] = useState(false);
+    const [isPlacesExpanded, setIsPlacesExpanded] = useState(false);
 
     useEffect(() => {
         fetchPendingItems();
@@ -84,11 +87,11 @@ export default function ActiveOrdersOverview() {
     const groupedAndSorted = useMemo(() => {
         // 0. Pre-filter raw items
         let filteredRaw = [...rawItems];
-        if (selectedCustomer !== 'all') {
-            filteredRaw = filteredRaw.filter(item => item.customer_name === selectedCustomer);
+        if (selectedCustomer.length > 0) {
+            filteredRaw = filteredRaw.filter(item => selectedCustomer.includes(item.customer_name));
         }
-        if (selectedPlace !== 'all') {
-            filteredRaw = filteredRaw.filter(item => item.place === selectedPlace);
+        if (selectedPlace.length > 0) {
+            filteredRaw = filteredRaw.filter(item => selectedPlace.includes(item.place));
         }
 
         // 1. Aggregate
@@ -144,20 +147,24 @@ export default function ActiveOrdersOverview() {
     const uniqueCustomers = useMemo(() => Array.from(new Set(rawItems.map(i => i.customer_name))).sort(), [rawItems]);
     const uniquePlaces = useMemo(() => Array.from(new Set(rawItems.map(i => i.place))).sort(), [rawItems]);
 
+    const renderPillValue = (items: string[], maxToShow: number = 2) => {
+        if (items.length <= maxToShow) return items.join(', ');
+        return `${items.slice(0, maxToShow).join(', ')} + ${items.length - maxToShow} more`;
+    };
+
     return (
         <div className="space-y-4 h-full flex flex-col p-6">
             <div className="flex flex-col mb-2">
-                <Link href="/orders" className="group flex items-center justify-between no-underline">
+                <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-sm font-semibold tracking-wide text-foreground/60 uppercase group-hover:text-accent transition-colors">Total Pending Items</h3>
+                        <h3 className="text-sm font-semibold tracking-wide text-foreground/60 uppercase">Total Pending Items</h3>
                         <p className="text-[10px] text-foreground/40 uppercase tracking-widest font-medium mt-1">
                             Production / Fulfillment Required
                         </p>
                     </div>
-                    <ArrowUpRight size={16} className="text-foreground/40 group-hover:text-accent transition-colors" />
-                </Link>
+                </div>
             </div>
-            
+
             <div className="flex flex-col gap-4 bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
                 <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Search */}
@@ -177,26 +184,37 @@ export default function ActiveOrdersOverview() {
                     {/* Customer Filter */}
                     <div className="w-full">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Customer</label>
-                        <Select
-                            value={selectedCustomer}
-                            onChange={(val: any) => setSelectedCustomer(val)}
-                            options={[
-                                { value: 'all', label: 'All Customers' },
-                                ...uniqueCustomers.map(c => ({ value: c, label: c }))
-                            ]}
+                        <MultiSelect
+                            values={selectedCustomer}
+                            placeholder="All Customers"
+                            onChange={(vals: any) => {
+                                setSelectedCustomer(vals);
+                                if (vals.length > 0) {
+                                    const associatedPlaces = Array.from(new Set(rawItems.filter(i => vals.includes(i.customer_name)).map(i => i.place)));
+                                    setSelectedPlace(associatedPlaces);
+                                } else {
+                                    setSelectedPlace([]);
+                                }
+                            }}
+                            options={uniqueCustomers.map(c => ({ value: c, label: c }))}
                         />
                     </div>
 
                     {/* Place Filter */}
                     <div className="w-full">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Location</label>
-                        <Select
-                            value={selectedPlace}
-                            onChange={(val: any) => setSelectedPlace(val)}
-                            options={[
-                                { value: 'all', label: 'All Locations' },
-                                ...uniquePlaces.map(p => ({ value: p, label: p }))
-                            ]}
+                        <MultiSelect
+                            values={selectedPlace}
+                            onChange={(vals: any) => {
+                                setSelectedPlace(vals);
+                                if (vals.length > 0) {
+                                    const associatedCustomers = Array.from(new Set(rawItems.filter(i => vals.includes(i.place)).map(i => i.customer_name)));
+                                    setSelectedCustomer(associatedCustomers);
+                                } else {
+                                    setSelectedCustomer([]);
+                                }
+                            }}
+                            options={uniquePlaces.map(p => ({ value: p, label: p }))}
                         />
                     </div>
 
@@ -216,6 +234,78 @@ export default function ActiveOrdersOverview() {
                     </div>
                 </div>
             </div>
+
+            {/* Active Filters Display */}
+            {(searchQuery || selectedCustomer.length > 0 || selectedPlace.length > 0 || sortMode !== 'qty_high') && (
+                <div className="flex flex-wrap items-center gap-2 px-1">
+                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">Applied:</span>
+
+                    {searchQuery && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-foreground/5 border border-border/20 rounded-xl text-xs font-medium text-foreground/80">
+                            <span className="text-foreground/40">Search:</span> {searchQuery}
+                            <button onClick={() => setSearchQuery('')} className="ml-1 text-foreground/40 hover:text-red-500"><X size={12} /></button>
+                        </div>
+                    )}
+
+                    {selectedCustomer.length > 0 && (
+                        <div
+                            className="flex items-start gap-2 px-3 py-2 bg-foreground/5 border border-border/20 rounded-xl text-xs font-medium text-foreground/80 w-full sm:max-w-[400px] lg:max-w-[500px] cursor-pointer hover:bg-foreground/10 transition-colors"
+                            onClick={() => setIsCustomersExpanded(!isCustomersExpanded)}
+                        >
+                            <span className="text-foreground/40 shrink-0 mt-0.5">Customers:</span>
+                            <div className={`flex flex-wrap gap-1.5 pr-1 w-full ${!isCustomersExpanded ? 'max-h-6 overflow-hidden' : ''}`}>
+                                {selectedCustomer.map(c => (
+                                    <span key={c} className="bg-foreground/10 px-1.5 py-0.5 rounded-md leading-tight">{c}</span>
+                                ))}
+                            </div>
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCustomer([]);
+                                if (selectedPlace.length > 0) setSelectedPlace([]);
+                            }} className="ml-auto shrink-0 text-foreground/40 hover:text-red-500 mt-0.5"><X size={14} /></button>
+                        </div>
+                    )}
+
+                    {selectedPlace.length > 0 && (
+                        <div
+                            className="flex items-start gap-2 px-3 py-2 bg-foreground/5 border border-border/20 rounded-xl text-xs font-medium text-foreground/80 w-full sm:max-w-[400px] lg:max-w-[500px] cursor-pointer hover:bg-foreground/10 transition-colors"
+                            onClick={() => setIsPlacesExpanded(!isPlacesExpanded)}
+                        >
+                            <span className="text-foreground/40 shrink-0 mt-0.5">Locations:</span>
+                            <div className={`flex flex-wrap gap-1.5 pr-1 w-full ${!isPlacesExpanded ? 'max-h-6 overflow-hidden' : ''}`}>
+                                {selectedPlace.map(p => (
+                                    <span key={p} className="bg-foreground/10 px-1.5 py-0.5 rounded-md leading-tight">{p}</span>
+                                ))}
+                            </div>
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPlace([]);
+                                if (selectedCustomer.length > 0) setSelectedCustomer([]);
+                            }} className="ml-auto shrink-0 text-foreground/40 hover:text-red-500 mt-0.5"><X size={14} /></button>
+                        </div>
+                    )}
+
+                    {sortMode !== 'qty_high' && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-foreground/5 border border-border/20 rounded-xl text-xs font-medium text-foreground/80">
+                            <span className="text-foreground/40">Sort:</span>
+                            {sortMode === 'qty_low' ? 'Lowest Qty' : sortMode === 'alpha_asc' ? 'A-Z' : 'Z-A'}
+                            <button onClick={() => setSortMode('qty_high')} className="ml-1 text-foreground/40 hover:text-red-500"><X size={12} /></button>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={() => {
+                            setSearchQuery('');
+                            setSelectedCustomer([]);
+                            setSelectedPlace([]);
+                            setSortMode('qty_high');
+                        }}
+                        className="text-[10px] font-bold text-red-500 hover:text-red-600 hover:underline ml-2 uppercase tracking-wider"
+                    >
+                        Clear All
+                    </button>
+                </div>
+            )}
 
             {/* List View */}
             <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden flex-1 flex flex-col">
@@ -244,7 +334,7 @@ export default function ActiveOrdersOverview() {
                                 >
                                     {/* Accent strip */}
                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent/20" />
-                                    
+
                                     {/* Group Header */}
                                     <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-gray-100 mb-4 gap-3 pl-2">
                                         <div className="flex items-center gap-3">
