@@ -13,28 +13,34 @@ export async function getDashboardStats() {
         // Run all queries concurrently using Promise.all
         const [
             salesRes,
+            unitsRes,
             ordersRes,
             customersRes,
             inventoryRes
         ] = await Promise.all([
-            // 1. Get Sales Count and Items for Units Sold
+            // 1. Get Sales Count (unique) using exact count
             supabaseAdmin
                 .from('me_sales')
-                .select('sale_id, me_sale_items(quantity)'),
+                .select('*', { count: 'exact', head: true }),
             
-            // 1.5 Get Order Count (Pending Orders only)
+            // 1.5 Get Units Sold without pulling full sale data
+            supabaseAdmin
+                .from('me_sale_items')
+                .select('quantity'),
+            
+            // 2. Get Order Count (Pending Orders only)
             supabaseAdmin
                 .from('me_orders')
                 .select('order_id')
                 .gt('pending', 0),
                 
-            // 2. Get Active Customers Count
+            // 3. Get Active Customers Count
             supabaseAdmin
                 .from('customers')
                 .select('*', { count: 'exact', head: true })
                 .eq('is_archived', false),
                 
-            // 3. Get Inventory Status with Item Names
+            // 4. Get Inventory Status with Item Names
             supabaseAdmin
                 .from('me_item_types')
                 .select(`
@@ -50,17 +56,15 @@ export async function getDashboardStats() {
         ]);
 
         if (salesRes.error) console.error('Error fetching sales:', salesRes.error);
+        if (unitsRes.error) console.error('Error fetching units:', unitsRes.error);
         if (ordersRes.error) console.error('Error fetching orders:', ordersRes.error);
         if (customersRes.error) console.error('Error fetching customers:', customersRes.error);
         if (inventoryRes.error) console.error('Error fetching inventory:', inventoryRes.error);
 
         // Process Sales & Units Sold
-        const sales = salesRes.data || [];
-        const uniqueSales = new Set(sales.map(s => s.sale_id)).size;
-        const totalUnitsSold = sales.reduce((sum, s) => {
-            const items = s.me_sale_items as any[] || [];
-            return sum + items.reduce((itemSum, item) => itemSum + Number(item.quantity), 0);
-        }, 0);
+        const uniqueSales = salesRes.count || 0;
+        const unitsData = unitsRes.data || [];
+        const totalUnitsSold = unitsData.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
         // Process Orders Count
         const orders = ordersRes.data || [];
