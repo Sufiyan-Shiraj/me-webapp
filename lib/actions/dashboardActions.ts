@@ -10,63 +10,69 @@ const supabaseAdmin = createClient(
 
 export async function getDashboardStats() {
     try {
-        // 1. Get Sales Count (Total unique sale_ids) and Total Units Sold
-        const { data: sales, error: salesError } = await supabaseAdmin
-            .from('me_sales')
-            .select('sale_id, me_sale_items(quantity)');
-        
-        if (salesError) {
-            console.error('Error fetching sales:', salesError);
-        }
+        // Run all queries concurrently using Promise.all
+        const [
+            salesRes,
+            ordersRes,
+            customersRes,
+            inventoryRes
+        ] = await Promise.all([
+            // 1. Get Sales Count and Items for Units Sold
+            supabaseAdmin
+                .from('me_sales')
+                .select('sale_id, me_sale_items(quantity)'),
+            
+            // 1.5 Get Order Count (Pending Orders only)
+            supabaseAdmin
+                .from('me_orders')
+                .select('order_id')
+                .gt('pending', 0),
+                
+            // 2. Get Active Customers Count
+            supabaseAdmin
+                .from('customers')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_archived', false),
+                
+            // 3. Get Inventory Status with Item Names
+            supabaseAdmin
+                .from('me_item_types')
+                .select(`
+                    id,
+                    name,
+                    quantity,
+                    me_items (
+                        name,
+                        is_archived
+                    )
+                `)
+                .eq('is_archived', false)
+        ]);
 
-        const uniqueSales = sales ? new Set(sales.map(s => s.sale_id)).size : 0;
-        const totalUnitsSold = sales ? sales.reduce((sum, s) => {
+        if (salesRes.error) console.error('Error fetching sales:', salesRes.error);
+        if (ordersRes.error) console.error('Error fetching orders:', ordersRes.error);
+        if (customersRes.error) console.error('Error fetching customers:', customersRes.error);
+        if (inventoryRes.error) console.error('Error fetching inventory:', inventoryRes.error);
+
+        // Process Sales & Units Sold
+        const sales = salesRes.data || [];
+        const uniqueSales = new Set(sales.map(s => s.sale_id)).size;
+        const totalUnitsSold = sales.reduce((sum, s) => {
             const items = s.me_sale_items as any[] || [];
             return sum + items.reduce((itemSum, item) => itemSum + Number(item.quantity), 0);
-        }, 0) : 0;
+        }, 0);
 
-        // 1.5 Get Order Count (Pending Orders only)
-        const { data: orders, error: ordersError } = await supabaseAdmin
-            .from('me_orders')
-            .select('order_id')
-            .gt('pending', 0);
-        
-        if (ordersError) {
-            console.error('Error fetching orders:', ordersError);
-        }
+        // Process Orders Count
+        const orders = ordersRes.data || [];
+        const uniqueOrders = new Set(orders.map(o => o.order_id)).size;
 
-        const uniqueOrders = orders ? new Set(orders.map(o => o.order_id)).size : 0;
+        // Process Customers Count
+        const finalCustomerCount = customersRes.count || 0;
 
-        // 2. Get Active Customers Count
-        const { data: customers, error: customerError, count: customerCount } = await supabaseAdmin
-            .from('customers')
-            .select('*', { count: 'exact' })
-            .eq('is_archived', false);
-        
-        if (customerError) {
-            console.error('Error fetching customers:', customerError);
-        }
-
-        const finalCustomerCount = customerCount ?? (customers?.length || 0);
-
-        // 3. Get Inventory Status with Item Names
-        const { data: inventory, error: inventoryError } = await supabaseAdmin
-            .from('me_item_types')
-            .select(`
-                id,
-                name,
-                quantity,
-                me_items (
-                    name,
-                    is_archived
-                )
-            `)
-            .eq('is_archived', false);
-        
-        if (inventoryError) throw inventoryError;
-
+        // Process Inventory
+        const inventory = inventoryRes.data || [];
         // Filter out variants where the parent item is archived
-        const activeInventory = (inventory || []).filter(item => {
+        const activeInventory = inventory.filter(item => {
             const parentItem = item.me_items as any;
             return parentItem && !parentItem.is_archived;
         });
@@ -113,5 +119,43 @@ export async function getDashboardStats() {
                 lowStockItems: []
             }
         };
+    }
+}
+
+export async function getPendingOrdersOverview() {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('me_orders')
+            .select(`
+                pending,
+                place,
+                customers ( name, district ),
+                me_item_types (
+                    name,
+                    me_items ( name )
+                )
+            `)
+            .gt('pending', 0);
+
+        if (error) throw error;
+
+        const formatted = data.map((row: any) => {
+            const customer = row.customers && !Array.isArray(row.customers) ? row.customers : { name: 'Unknown', district: 'Ernakulam' };
+            const itemType = row.me_item_types && !Array.isArray(row.me_item_types) ? row.me_item_types : null;
+            const baseItem = itemType?.me_items && !Array.isArray(itemType.me_items) ? itemType.me_items : { name: 'Unknown' };
+
+            return {
+                product_name: baseItem.name,
+                variant: itemType?.name || 'Standard',
+                pending: row.pending,
+                customer_name: customer.name,
+                place: row.place || customer.district || 'Ernakulam'
+            };
+        });
+
+        return formatted;
+    } catch (error) {
+        console.error("Error fetching pending items server-side:", error);
+        return [];
     }
 }

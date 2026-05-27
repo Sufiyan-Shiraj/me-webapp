@@ -8,7 +8,7 @@ import RecentActivity from '@/components/dashboard/RecentActivity';
 import DashboardActions from '@/components/dashboard/DashboardActions';
 import ActiveOrdersOverview from '@/components/dashboard/ActiveOrdersOverview';
 import Link from 'next/link';
-import { getDashboardStats } from '@/lib/actions/dashboardActions';
+import { getDashboardStats, getPendingOrdersOverview } from '@/lib/actions/dashboardActions';
 import { getRecentActivity } from '@/lib/actions/activityActions';
 import { TrendingUp, ShoppingBag, Truck } from 'lucide-react';
 
@@ -17,8 +17,11 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-    const stats = await getDashboardStats();
-    const activities = await getRecentActivity();
+    const [stats, activities, pendingOrders] = await Promise.all([
+        getDashboardStats(),
+        getRecentActivity(),
+        getPendingOrdersOverview()
+    ]);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out pb-10">
@@ -83,7 +86,7 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Side: Active Orders Overview (Takes 2 columns) */}
                 <div className="lg:col-span-2 relative overflow-hidden bg-gradient-to-b from-surface to-background/50 rounded-2xl border border-border shadow-float">
-                    <ActiveOrdersOverview />
+                    <ActiveOrdersOverview initialItems={pendingOrders} />
                 </div>
 
                 {/* Right Side: Recent Activity (Takes 1 column) */}

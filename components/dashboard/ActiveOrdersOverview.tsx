@@ -28,9 +28,9 @@ interface AggregatedItem {
     variants: AggregatedVariant[];
 }
 
-export default function ActiveOrdersOverview() {
-    const [rawItems, setRawItems] = useState<RawOrderItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+export default function ActiveOrdersOverview({ initialItems = [] }: { initialItems?: RawOrderItem[] }) {
+    const [rawItems, setRawItems] = useState<RawOrderItem[]>(initialItems);
+    const [isLoading, setIsLoading] = useState(false); // Default to false since data comes from server
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -40,49 +40,12 @@ export default function ActiveOrdersOverview() {
     const [isCustomersExpanded, setIsCustomersExpanded] = useState(false);
     const [isPlacesExpanded, setIsPlacesExpanded] = useState(false);
 
+    // If initialItems change (e.g. re-navigating), update rawItems
     useEffect(() => {
-        fetchPendingItems();
-    }, []);
-
-    const fetchPendingItems = async () => {
-        setIsLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('me_orders')
-                .select(`
-                    pending,
-                    place,
-                    customers ( name, district ),
-                    me_item_types (
-                        name,
-                        me_items ( name )
-                    )
-                `)
-                .gt('pending', 0);
-
-            if (error) throw error;
-
-            const formatted: RawOrderItem[] = data.map((row: any) => {
-                const customer = row.customers && !Array.isArray(row.customers) ? row.customers : { name: 'Unknown', district: 'Ernakulam' };
-                const itemType = row.me_item_types && !Array.isArray(row.me_item_types) ? row.me_item_types : null;
-                const baseItem = itemType?.me_items && !Array.isArray(itemType.me_items) ? itemType.me_items : { name: 'Unknown' };
-
-                return {
-                    product_name: baseItem.name,
-                    variant: itemType?.name || 'Standard',
-                    pending: row.pending,
-                    customer_name: customer.name,
-                    place: row.place || customer.district || 'Ernakulam'
-                };
-            });
-
-            setRawItems(formatted);
-        } catch (error) {
-            console.error("Error fetching pending items:", error);
-        } finally {
-            setIsLoading(false);
+        if (initialItems.length > 0) {
+            setRawItems(initialItems);
         }
-    };
+    }, [initialItems]);
 
     const groupedAndSorted = useMemo(() => {
         // 0. Pre-filter raw items
