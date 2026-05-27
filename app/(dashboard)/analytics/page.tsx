@@ -12,6 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { getAnalyticsData } from '@/lib/actions/analyticsActions';
 import clsx from 'clsx';
+import useSWR from 'swr';
 
 export default function AnalyticsPage() {
     const { user, isLoading: isAuthLoading } = useAuth();
@@ -20,42 +21,28 @@ export default function AnalyticsPage() {
     const [timeRange, setTimeRange] = useState('7d');
     const [dataType, setDataType] = useState<'sales' | 'orders'>('orders');
     
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    
-    const [trendData, setTrendData] = useState<any[]>([]);
-    const [categoryData, setCategoryData] = useState<any[]>([]);
-    const [topProducts, setTopProducts] = useState<any[]>([]);
-    const [kpiStats, setKpiStats] = useState<any[]>([]);
-
     useEffect(() => {
         if (!isAuthLoading && user?.role !== 'admin') {
             router.push('/dashboard');
         }
     }, [user, isAuthLoading, router]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            setError(null);
-            
-            const result = await getAnalyticsData(timeRange, dataType);
-            if (result.success) {
-                setTrendData(result.trendData || []);
-                setCategoryData(result.categoryData || []);
-                setTopProducts(result.topProducts || []);
-                setKpiStats(result.kpis || []);
-            } else {
-                setError(result.error || 'Failed to fetch analytics data');
-            }
-            
-            setIsLoading(false);
-        };
-
-        if (user?.role === 'admin') {
-            fetchData();
+    const { data: analyticsResult, error: swrError, isLoading: isSwrLoading } = useSWR(
+        user?.role === 'admin' ? ['analytics', timeRange, dataType] : null,
+        () => getAnalyticsData(timeRange, dataType),
+        { 
+            refreshInterval: 60000, // 1 minute refresh
+            revalidateOnFocus: true 
         }
-    }, [timeRange, dataType, user]);
+    );
+
+    const isLoading = isAuthLoading || isSwrLoading;
+    const error = swrError?.message || (analyticsResult && !analyticsResult.success ? analyticsResult.error : null);
+    
+    const trendData = analyticsResult?.trendData || [];
+    const categoryData = analyticsResult?.categoryData || [];
+    const topProducts = analyticsResult?.topProducts || [];
+    const kpiStats = analyticsResult?.kpis || [];
 
     if (isAuthLoading || user?.role !== 'admin') {
         return null;
