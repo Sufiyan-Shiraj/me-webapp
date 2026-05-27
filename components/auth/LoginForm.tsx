@@ -42,7 +42,7 @@ export default function LoginForm() {
     };
 
     return (
-        <Card className="w-full shadow-lg border border-border bg-white relative overflow-hidden">
+        <Card className="w-full shadow-lg border border-border bg-surface relative overflow-hidden">
             <CardHeader className="flex-col items-start gap-2 border-b border-border pb-6">
                 <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 rounded-xl bg-accent/10 border border-accent/20 text-accent shadow-sm">
@@ -59,7 +59,7 @@ export default function LoginForm() {
             <form onSubmit={handleSubmit}>
                 <CardBody className="flex flex-col gap-5 py-6">
                     {/* Company Selection */}
-                    <div className="flex gap-2 p-1 bg-gray-50 rounded-lg border border-border">
+                    <div className="flex gap-2 p-1 bg-background/50 rounded-lg border border-border">
                         <button
                             type="button"
                             onClick={() => setCompany('me')}
@@ -67,7 +67,7 @@ export default function LoginForm() {
                                 "flex-1 py-2 px-3 rounded-md text-sm font-bold transition-all",
                                 company === 'me'
                                     ? "bg-accent text-white shadow-sm"
-                                    : "text-gray-500 hover:text-foreground hover:bg-gray-100"
+                                    : "text-foreground opacity-50 hover:opacity-100 hover:bg-background"
                             )}
                         >
                             ME Enterprises
@@ -79,7 +79,7 @@ export default function LoginForm() {
                                 "flex-1 py-2 px-3 rounded-md text-sm font-bold transition-all",
                                 company === 'mayfield'
                                     ? "bg-accent text-white shadow-sm"
-                                    : "text-gray-500 hover:text-foreground hover:bg-gray-100"
+                                    : "text-foreground opacity-50 hover:opacity-100 hover:bg-background"
                             )}
                         >
                             Mayfield
@@ -96,7 +96,8 @@ export default function LoginForm() {
                             placeholder="Enter username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            className="bg-white border-border pl-10 focus:border-accent/50 placeholder:text-gray-400"
+                            className="bg-transparent pl-10"
+                            inputClassName="!bg-transparent !border-transparent !shadow-none focus:!bg-transparent focus:!border-transparent focus:!ring-0 focus:!shadow-none placeholder:text-gray-500 text-foreground"
                             required
                             autoComplete="username"
                         />
@@ -113,7 +114,8 @@ export default function LoginForm() {
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="bg-white border-border pl-10 pr-10 focus:border-accent/50 placeholder:text-gray-400"
+                                className="bg-transparent pl-10 pr-10"
+                                inputClassName="!bg-transparent !border-transparent !shadow-none focus:!bg-transparent focus:!border-transparent focus:!ring-0 focus:!shadow-none placeholder:text-gray-500 text-foreground"
                                 required
                                 autoComplete="current-password"
                             />
@@ -140,7 +142,7 @@ export default function LoginForm() {
                     )}
                 </CardBody>
 
-                <CardFooter className="flex flex-col gap-4 bg-gray-50 border-t border-border pt-6">
+                <CardFooter className="flex flex-col gap-4 bg-background/50 border-t border-border pt-6">
                     <Button
                         type="submit"
                         fullWidth

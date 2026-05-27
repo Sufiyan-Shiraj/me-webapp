@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -7,6 +7,7 @@ import { getCustomers, createCustomer, deleteCustomer, hardDeleteCustomer, unarc
 import { getPlaces, createPlace } from '@/lib/actions/placesActions';
 import { Customer } from '@/lib/types';
 import { Select } from '@/components/ui/Select';
+import { TablePagination } from '@/components/ui/TablePagination';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CustomerModalProps {
@@ -24,13 +25,22 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
     const [places, setPlaces] = useState<{id: string, name: string}[]>([]);
     const [filterPlace, setFilterPlace] = useState('all');
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     useEffect(() => {
         if (isOpen) {
             setSearchTerm('');
             setFilterPlace('all');
+            setCurrentPage(1);
             fetchCustomers();
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterPlace]);
 
     const fetchCustomers = async () => {
         setIsLoading(true);
@@ -149,7 +159,7 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
         }
     };
 
-    const filteredCustomers = customers.filter(c => {
+    const filteredCustomers = useMemo(() => customers.filter(c => {
         const isUnlocated = !c.district || c.district === 'none';
         if (filterPlace === 'none' && !isUnlocated) return false;
         if (filterPlace !== 'all' && filterPlace !== 'none' && c.district !== filterPlace) return false;
@@ -162,9 +172,15 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
             return !c.is_archived;
         }
         return c.name.toLowerCase().includes(query);
-    });
+    }), [customers, searchTerm, filterPlace]);
 
     const hasExactMatch = customers.some(c => c.name.toLowerCase() === searchTerm.trim().toLowerCase());
+
+    const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+    const paginatedCustomers = filteredCustomers.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     return (
         <Modal
@@ -172,7 +188,7 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
             onClose={onClose}
             title="Active & Archived Customers"
             description="View and manage active customers, or search 'archived' to manage archived records."
-            maxWidth="max-w-3xl"
+            maxWidth="max-w-4xl"
             footer={
                 <Button variant="ghost" onClick={onClose} className="w-full sm:w-auto">
                     Close
@@ -204,16 +220,16 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
                     </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-2xl border border-border/50 overflow-hidden flex flex-col">
-                    <div className="max-h-[50vh] overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar min-h-[200px]">
+                <div className="bg-surface rounded-2xl border border-border/50 overflow-hidden flex flex-col">
+                    <div className="p-1.5 space-y-0.5 min-h-[200px]">
                         {isLoading ? (
                             <div className="flex justify-center items-center h-32 text-foreground/50">
                                 <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-accent mr-3"></div>
                                 <span className="text-sm font-medium">Loading customers...</span>
                             </div>
-                        ) : filteredCustomers.length > 0 ? (
+                        ) : paginatedCustomers.length > 0 ? (
                             <AnimatePresence>
-                                {filteredCustomers.map(customer => (
+                                {paginatedCustomers.map(customer => (
                                     <motion.div 
                                         key={customer.id}
                                         initial={{ opacity: 0, y: 5 }}
@@ -334,6 +350,18 @@ export function CustomerModal({ isOpen, onClose }: CustomerModalProps) {
                             </div>
                         )}
                     </div>
+                    {filteredCustomers.length > 0 && (
+                        <div className="border-t border-border/50 bg-white">
+                            <TablePagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                totalItems={filteredCustomers.length}
+                                itemsPerPage={itemsPerPage}
+                                onPageChange={setCurrentPage}
+                                onItemsPerPageChange={setItemsPerPage}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </Modal>

@@ -5,7 +5,7 @@ import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import AnalyticsChart from '@/components/dashboard/AnalyticsChart';
 import { Select } from '@/components/ui/Select';
-import { Download, TrendingUp, AlertCircle, Package, Truck } from 'lucide-react';
+import { TrendingUp, AlertCircle, Package, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '@/context/AuthContext';
@@ -113,7 +113,6 @@ export default function AnalyticsPage() {
                             placeholder="Time Range"
                         />
                     </div>
-                    <Button icon={Download} variant="secondary" className="font-semibold shadow-sm">Report</Button>
                 </div>
             </div>
 

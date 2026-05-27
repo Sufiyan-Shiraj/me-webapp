@@ -66,6 +66,7 @@ export function GenericExportModal({ isOpen, onClose, data, columns, filenamePre
             onClose={onClose}
             title="Export Preview"
             description="Preview the data before downloading the CSV file."
+            maxWidth="max-w-5xl"
             footer={
                 <>
                     <Button variant="ghost" onClick={onClose}>Cancel</Button>

@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-  /* Lucid Enterprise - Warm & Modern */
-  --background: #FAFAF9; /* Stone 50 */
-  --foreground: #1C1917; /* Stone 900 */
-  --surface: #FFFFFF;
-  --border: #E7E5E4; /* Stone 200 */
+  /* Premium Deep Light Mode - Clean Web App */
+  --background: #F1F5F9; /* Slate 100 for distinct background */
+  --foreground: #0F172A; /* Slate 900 for text */
+  --surface: #FFFFFF; /* Pure white cards */
+  --border: #E2E8F0; /* Slate 200 borders */
   
-  --primary: #1C1917; /* Stone 900 */
+  --primary: #0F172A; /* Slate 900 */
   --accent: #EA580C; /* Orange 600 */
   --accent-rgb: 234, 88, 12;
 

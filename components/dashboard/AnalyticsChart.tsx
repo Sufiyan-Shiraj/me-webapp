@@ -39,14 +39,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         );
     }
     return null;
-};
+}
 
 export default function AnalyticsChart({ title, type, data }: ChartProps) {
     const total = useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
     return (
-        <Card className="h-[380px] bg-surface/80 backdrop-blur-md border border-border shadow-sm flex flex-col hover:border-primary/40 transition-colors duration-300">
+        <Card className="h-auto min-h-[450px] md:h-[380px] md:min-h-0 bg-surface/80 backdrop-blur-md border border-border shadow-sm flex flex-col hover:border-primary/40 transition-colors duration-300">
             <CardHeader className="border-b border-border bg-accent/5 px-6 py-4">
                 <h3 className="text-sm font-semibold tracking-tight text-foreground flex items-center gap-2">
                     <div className="p-1.5 bg-accent/10 rounded-md shadow-sm border border-border">
@@ -94,7 +94,7 @@ export default function AnalyticsChart({ title, type, data }: ChartProps) {
                                 </ResponsiveContainer>
                             </div>
 
-                            <div className="w-full md:w-1/2 flex flex-col gap-2.5 justify-start overflow-y-auto custom-scrollbar h-full max-h-[220px] pr-2 pb-2">
+                            <div className="w-full md:w-1/2 flex flex-col gap-2.5 justify-start overflow-y-auto custom-scrollbar h-full max-h-[220px] md:max-h-full pr-2 pb-2">
                                 {data.map((item, idx) => (
                                     <motion.div 
                                         initial={{ opacity: 0, x: 10 }}

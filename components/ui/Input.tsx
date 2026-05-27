@@ -7,16 +7,17 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     error?: string;
     helperText?: string;
     fullWidth?: boolean;
+    inputClassName?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-    ({ className, label, error, helperText, fullWidth = true, ...props }, ref) => {
+    ({ className, label, error, helperText, fullWidth = true, inputClassName, ...props }, ref) => {
         return (
             <div className={clsx(styles['input-group'], fullWidth && styles['w-full'], className)}>
                 {label && <label className={styles.label} htmlFor={props.id}>{label}</label>}
                 <input
                     ref={ref}
-                    className={clsx(styles.input, error && styles['input-error'])}
+                    className={clsx(styles.input, error && styles['input-error'], inputClassName)}
                     {...props}
                 />
                 {error && <span className={styles['error-msg']}>{error}</span>}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Button } from './Button';
 import { Select } from './Select';
@@ -12,6 +12,50 @@ interface TablePaginationProps {
     onPageChange: (page: number) => void;
     onItemsPerPageChange: (itemsPerPage: number) => void;
 }
+
+const DotsInput = ({ onJump, totalPages }: { onJump: (p: number) => void, totalPages: number }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [val, setVal] = useState('');
+
+    const handleSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        let p = parseInt(val, 10);
+        if (isNaN(p)) {
+            setIsEditing(false);
+            return;
+        }
+        if (p < 1) p = 1;
+        if (p > totalPages) p = totalPages;
+        onJump(p);
+        setIsEditing(false);
+        setVal('');
+    };
+
+    if (isEditing) {
+        return (
+            <form onSubmit={handleSubmit} className="inline-flex items-center mx-1">
+                <input 
+                    type="number" 
+                    autoFocus
+                    value={val}
+                    onChange={e => setVal(e.target.value)}
+                    onBlur={() => handleSubmit()}
+                    className="w-12 h-8 text-center text-sm font-semibold rounded-lg border border-accent focus:border-accent focus:ring-1 focus:ring-accent outline-none bg-surface text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none shadow-sm transition-all"
+                />
+            </form>
+        );
+    }
+    
+    return (
+        <button 
+            onClick={() => setIsEditing(true)} 
+            className="px-2 text-foreground/50 hover:text-foreground hover:bg-foreground/5 h-8 rounded-lg transition-colors cursor-pointer font-bold"
+            title="Jump to page"
+        >
+            …
+        </button>
+    );
+};
 
 export function TablePagination({
     currentPage,
@@ -56,17 +100,17 @@ export function TablePagination({
     };
 
     return (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white rounded-b-3xl">
-            <div className="text-sm text-gray-500 font-medium">
-                Showing <span className="font-bold text-gray-900">{startItem}</span> to{' '}
-                <span className="font-bold text-gray-900">{endItem}</span> of{' '}
-                <span className="font-bold text-gray-900">{totalItems}</span> results
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-surface rounded-b-3xl border-t border-border">
+            <div className="text-sm text-foreground/60 font-medium">
+                Showing <span className="font-bold text-foreground">{startItem}</span> to{' '}
+                <span className="font-bold text-foreground">{endItem}</span> of{' '}
+                <span className="font-bold text-foreground">{totalItems}</span> results
             </div>
 
             <div className="flex items-center gap-6">
                 {/* Items per page selector */}
                 <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 font-medium">Per page:</span>
+                    <span className="text-sm text-foreground/60 font-medium">Per page:</span>
                     <div className="w-20">
                         <Select
                             options={[
@@ -76,7 +120,10 @@ export function TablePagination({
                                 { value: 100, label: '100' },
                             ]}
                             value={itemsPerPage}
-                            onChange={(val: number) => onItemsPerPageChange(Number(val))}
+                            onChange={(val: number) => {
+                                onItemsPerPageChange(Number(val));
+                                onPageChange(1);
+                            }}
                         />
                     </div>
                 </div>
@@ -86,7 +133,7 @@ export function TablePagination({
                     <button
                         onClick={() => onPageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 transition-colors"
+                        className="h-8 w-8 flex items-center justify-center rounded-lg text-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 transition-colors"
                     >
                         <ChevronLeft size={18} />
                     </button>
@@ -95,15 +142,15 @@ export function TablePagination({
                         {getPageNumbers().map((page, index) => (
                             <React.Fragment key={index}>
                                 {page === '...' ? (
-                                    <span className="px-2 text-gray-400">…</span>
+                                    <DotsInput onJump={onPageChange} totalPages={totalPages} />
                                 ) : (
                                     <button
                                         onClick={() => onPageChange(page as number)}
                                         className={clsx(
                                             'h-8 min-w-[32px] px-3 rounded-lg text-sm font-semibold transition-all duration-200 border',
                                             page === currentPage
-                                                ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
-                                                : 'text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-100'
+                                                ? 'bg-foreground text-background border-foreground shadow-sm'
+                                                : 'text-foreground/60 border-transparent hover:text-foreground hover:bg-foreground/5'
                                         )}
                                     >
                                         {page}
@@ -116,7 +163,7 @@ export function TablePagination({
                     <button
                         onClick={() => onPageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-30 transition-colors"
+                        className="h-8 w-8 flex items-center justify-center rounded-lg text-foreground/50 hover:text-foreground hover:bg-foreground/5 disabled:opacity-30 transition-colors"
                     >
                         <ChevronRight size={18} />
                     </button>
