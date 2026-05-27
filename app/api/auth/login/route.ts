@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { SignJWT } from 'jose';
+import { UAParser } from 'ua-parser-js';
 
 export async function POST(request: Request) {
     try {
@@ -11,7 +12,41 @@ export async function POST(request: Request) {
         }
 
         const userAgent = request.headers.get('user-agent') || 'Unknown';
-        const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+        const rawIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+        const ip = rawIp.split(',')[0].trim();
+        
+        // Parse User Agent
+        const parser = new UAParser(userAgent);
+        const browserObj = parser.getBrowser();
+        const osObj = parser.getOS();
+        const deviceObj = parser.getDevice();
+
+        let parsedDevice = 'Desktop';
+        if (deviceObj.type === 'mobile' || deviceObj.type === 'tablet' || osObj.name === 'iOS' || osObj.name === 'Android') {
+            parsedDevice = 'Mobile';
+        }
+
+        const browserString = browserObj.name 
+            ? `${browserObj.name} ${browserObj.version ? browserObj.version.split('.')[0] : ''}`.trim() 
+            : 'Unknown';
+
+        // Fetch Location
+        let locationStr = 'Unknown Location';
+        try {
+            if (ip && ip !== '127.0.0.1' && ip !== '::1') {
+                const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,city,regionName,country`);
+                if (geoRes.ok) {
+                    const geoData = await geoRes.json();
+                    if (geoData.status === 'success') {
+                        locationStr = `${geoData.city}, ${geoData.regionName}`;
+                    }
+                }
+            } else {
+                locationStr = 'Localhost';
+            }
+        } catch (e) {
+            console.error("GeoIP error:", e);
+        }
         
         // 1. Check for recent failed attempts from this IP to detect suspicious activity
         const { count: failedCount } = await supabaseAdmin
@@ -39,9 +74,9 @@ export async function POST(request: Request) {
                 user_id: userRecord?.id,
                 status: 'failed',
                 ip_address: ip,
-                device: userAgent.includes('Mobile') ? 'Mobile' : 'Desktop',
-                browser: userAgent,
-                location: 'Kochi, Kerala',
+                device: parsedDevice,
+                browser: browserString,
+                location: locationStr,
                 is_suspicious: isSuspicious
             });
 
@@ -55,9 +90,9 @@ export async function POST(request: Request) {
             user_id: profile.id,
             status: 'success',
             ip_address: ip,
-            device: userAgent.includes('Mobile') ? 'Mobile' : 'Desktop',
-            browser: userAgent,
-            location: 'Kochi, Kerala',
+            device: parsedDevice,
+            browser: browserString,
+            location: locationStr,
             is_suspicious: isSuspicious
         });
 

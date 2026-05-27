@@ -51,7 +51,7 @@ export default async function DashboardPage() {
                     </Link>
 
                     {/* Right: Total Shipments */}
-                    <Link href="/shipments" className="flex-1 p-6 relative flex flex-col justify-between group hover:bg-accent/[0.02] transition-colors cursor-pointer">
+                    <Link href="/sales" className="flex-1 p-6 relative flex flex-col justify-between group hover:bg-accent/[0.02] transition-colors cursor-pointer">
                         <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-accent/10 blur-2xl group-hover:bg-accent/20 transition-colors duration-500" />
                         <div className="relative z-10">
                             <div className="flex items-center justify-between mb-4">
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
                                 </div>
                             </div>
                             <div className="flex items-end gap-3">
-                                <h2 className="text-5xl font-black tracking-tight text-foreground">0</h2>
+                                <h2 className="text-5xl font-black tracking-tight text-foreground">{stats.salesCount.toLocaleString()}</h2>
                             </div>
                         </div>
                     </Link>

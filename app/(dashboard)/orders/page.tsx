@@ -159,7 +159,6 @@ export default function OrdersPage() {
         maxQty: '',
         startDate: '',
         endDate: '',
-        completionStatus: 'pending',
         place: [] as string[]
     });
 
@@ -225,6 +224,10 @@ export default function OrdersPage() {
         fetchMetadata();
         fetchPlaces();
     }, []);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, filters]);
 
     const fetchPlaces = async () => {
         const res = await getPlaces();
@@ -390,11 +393,6 @@ export default function OrdersPage() {
                 const hasMatchingPlace = inv.items.some(item => item.place && filters.place.includes(item.place));
                 if (!hasMatchingPlace) return false;
             }
-
-            // Status Filter
-            const allCompleted = inv.items.every(item => item.done || item.pending === 0);
-            if (filters.completionStatus === 'pending' && allCompleted) return false;
-            if (filters.completionStatus === 'completed' && !allCompleted) return false;
 
             return true;
         });
@@ -594,20 +592,6 @@ export default function OrdersPage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                <Filter size={12} /> Status Filter
-                            </label>
-                            <Select 
-                                value={filters.completionStatus}
-                                onChange={(val) => setFilters(f => ({ ...f, completionStatus: val as string }))}
-                                options={[
-                                    { value: 'pending', label: 'Pending Only' },
-                                    { value: 'completed', label: 'Completed Only' },
-                                    { value: 'all', label: 'Show Both' }
-                                ]}
-                            />
-                        </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
@@ -643,7 +627,6 @@ export default function OrdersPage() {
                                     maxQty: '',
                                     startDate: '',
                                     endDate: '',
-                                    completionStatus: 'pending',
                                     place: []
                                 })}
                             >
@@ -710,7 +693,10 @@ export default function OrdersPage() {
                         totalItems={filteredData.length}
                         itemsPerPage={itemsPerPage}
                         onPageChange={setCurrentPage}
-                        onItemsPerPageChange={setItemsPerPage}
+                        onItemsPerPageChange={(val) => {
+                            setItemsPerPage(val);
+                            setCurrentPage(1);
+                        }}
                     />
                 </div>
             )}
