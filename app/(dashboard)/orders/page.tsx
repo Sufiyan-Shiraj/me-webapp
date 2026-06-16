@@ -23,7 +23,7 @@ import { getPlaces, createPlace } from '@/lib/actions/placesActions';
 
 interface OrderRowProps {
     order: OrderInvoice;
-    places: {id: string, name: string}[];
+    places: { id: string, name: string }[];
     onUpdateOrderPlace: (orderId: number, place: string) => void;
     onCreateOrderPlace: (name: string, orderId: number) => void;
     onEditOrder: (order: OrderInvoice) => void;
@@ -139,7 +139,7 @@ const OrderRow = ({ order, places, onUpdateOrderPlace, onCreateOrderPlace, onEdi
 
 export default function OrdersPage() {
     const [data, setData] = useState<OrderInvoice[]>([]);
-    const [places, setPlaces] = useState<{id: string, name: string}[]>([]);
+    const [places, setPlaces] = useState<{ id: string, name: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -148,7 +148,7 @@ export default function OrdersPage() {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [editOrder, setEditOrder] = useState<OrderInvoice | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    
+
     // Advanced Filters State
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filters, setFilters] = useState({
@@ -159,10 +159,11 @@ export default function OrdersPage() {
         maxQty: '',
         startDate: '',
         endDate: '',
-        place: [] as string[]
+        place: [] as string[],
+        pendingOnly: false
     });
 
-    const [filterMetadata, setFilterMetadata] = useState<{items: string[], variants: Map<string, Set<string>>}>({ items: [], variants: new Map() });
+    const [filterMetadata, setFilterMetadata] = useState<{ items: string[], variants: Map<string, Set<string>> }>({ items: [], variants: new Map() });
 
     const fetchMetadata = async () => {
         try {
@@ -170,17 +171,17 @@ export default function OrdersPage() {
                 .from('me_item_types')
                 .select(`name, me_items(name, is_archived)`)
                 .eq('is_archived', false);
-                
+
             if (invData) {
                 const itemsSet = new Set<string>();
                 const varMap = new Map<string, Set<string>>();
                 invData.forEach((row: any) => {
                     const baseItem = row.me_items && !Array.isArray(row.me_items) ? row.me_items : null;
                     if (!baseItem || baseItem.is_archived) return;
-                    
+
                     const iName = baseItem.name;
                     const vName = row.name;
-                    
+
                     itemsSet.add(iName);
                     if (!varMap.has(iName)) varMap.set(iName, new Set());
                     varMap.get(iName)!.add(vName);
@@ -312,7 +313,7 @@ export default function OrdersPage() {
         try {
             const order = data.find(o => o.order_id === orderId);
             if (!order) return;
-            
+
             await Promise.all(order.items.map(item => updateOrderItem(item.id, { place })));
 
             setData(prev => prev.map(o => o.order_id === orderId ? {
@@ -369,12 +370,15 @@ export default function OrdersPage() {
             const matchesItems = inv.items.some(item => {
                 const itemMatch = filters.item === 'all' || item.product_name === filters.item;
                 const variantMatch = filters.variant === 'all' || item.variant === filters.variant;
-                
+
                 // Quantity Filters
                 const minMatch = !filters.minQty || item.quantity >= Number(filters.minQty);
                 const maxMatch = !filters.maxQty || item.quantity <= Number(filters.maxQty);
 
-                return itemMatch && variantMatch && minMatch && maxMatch;
+                // Pending Only Filter
+                const pendingMatch = !filters.pendingOnly || item.pending > 0;
+
+                return itemMatch && variantMatch && minMatch && maxMatch && pendingMatch;
             });
             if (!matchesItems) return false;
 
@@ -461,16 +465,16 @@ export default function OrdersPage() {
                             />
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-900 transition-colors" size={18} />
                         </div>
-                        <Button 
-                            variant="secondary" 
-                            icon={isFilterOpen ? X : Filter} 
+                        <Button
+                            variant="secondary"
+                            icon={isFilterOpen ? X : Filter}
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                             className={clsx("h-11 px-5 rounded-xl transition-all whitespace-nowrap border-gray-200 font-semibold", isFilterOpen && "bg-gray-900 text-white hover:bg-black border-transparent")}
                         >
                             {isFilterOpen ? "Close Filters" : "Filters"}
                         </Button>
                     </div>
-                    
+
                     <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                         <Button variant="secondary" className="h-11 rounded-xl px-5 font-semibold" icon={Download} onClick={() => setIsExportModalOpen(true)}>
                             Export CSV
@@ -483,7 +487,7 @@ export default function OrdersPage() {
 
                 {/* Filter Panel */}
                 {isFilterOpen && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="p-6 bg-white border border-gray-100 rounded-3xl shadow-md grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-top-4 duration-300"
@@ -492,7 +496,7 @@ export default function OrdersPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Search size={12} /> Customer
                             </label>
-                            <MultiSelect 
+                            <MultiSelect
                                 values={filters.customer}
                                 placeholder="All Customers"
                                 onChange={(vals) => setFilters(f => {
@@ -514,7 +518,7 @@ export default function OrdersPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Plus size={12} /> Product
                             </label>
-                            <Select 
+                            <Select
                                 value={filters.item}
                                 onChange={(val) => setFilters(f => ({ ...f, item: val as string, variant: 'all' }))}
                                 options={[
@@ -528,14 +532,14 @@ export default function OrdersPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <ChevronDown size={12} /> Variant
                             </label>
-                            <Select 
+                            <Select
                                 value={filters.variant}
                                 onChange={(val) => setFilters(f => ({ ...f, variant: val as string }))}
                                 disabled={filters.item === 'all'}
                                 options={[
                                     { value: 'all', label: 'All Variants' },
-                                    ...(filters.item !== 'all' && filterOptions.variants.get(filters.item) ? 
-                                        Array.from(filterOptions.variants.get(filters.item)!).sort().map(v => ({ value: v, label: v })) : 
+                                    ...(filters.item !== 'all' && filterOptions.variants.get(filters.item) ?
+                                        Array.from(filterOptions.variants.get(filters.item)!).sort().map(v => ({ value: v, label: v })) :
                                         []
                                     )
                                 ]}
@@ -547,17 +551,17 @@ export default function OrdersPage() {
                                 <Hash size={12} /> Quantity Range
                             </label>
                             <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-gray-900 transition-all h-10 px-1">
-                                <input 
-                                    type="number" 
-                                    placeholder="Min" 
+                                <input
+                                    type="number"
+                                    placeholder="Min"
                                     className="w-full h-full bg-transparent text-sm px-2 outline-none text-center"
                                     value={filters.minQty}
                                     onChange={(e) => setFilters(f => ({ ...f, minQty: e.target.value }))}
                                 />
                                 <span className="text-gray-300 font-medium">-</span>
-                                <input 
-                                    type="number" 
-                                    placeholder="Max" 
+                                <input
+                                    type="number"
+                                    placeholder="Max"
                                     className="w-full h-full bg-transparent text-sm px-2 outline-none text-center"
                                     value={filters.maxQty}
                                     onChange={(e) => setFilters(f => ({ ...f, maxQty: e.target.value }))}
@@ -571,8 +575,8 @@ export default function OrdersPage() {
                             </label>
                             <div className="flex items-center gap-4">
                                 <div className="flex-1 relative group">
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="w-full h-10 px-3 pl-9 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full"
                                         value={filters.startDate}
                                         onChange={(e) => setFilters(f => ({ ...f, startDate: e.target.value }))}
@@ -581,8 +585,8 @@ export default function OrdersPage() {
                                 </div>
                                 <span className="text-gray-300 font-medium text-sm">to</span>
                                 <div className="flex-1 relative group">
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         className="w-full h-10 px-3 pl-9 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 outline-none transition-all [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:w-full"
                                         value={filters.endDate}
                                         onChange={(e) => setFilters(f => ({ ...f, endDate: e.target.value }))}
@@ -597,7 +601,7 @@ export default function OrdersPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <MapPin size={12} /> Location
                             </label>
-                            <MultiSelect 
+                            <MultiSelect
                                 options={places.map(p => ({ value: p.name, label: p.name }))}
                                 values={filters.place}
                                 onChange={(vals) => setFilters(f => {
@@ -614,24 +618,44 @@ export default function OrdersPage() {
                             />
                         </div>
 
-                        <div className="flex items-end justify-end gap-3">
-                            <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100/80 rounded-xl"
-                                onClick={() => setFilters({
-                                    customer: [],
-                                    item: 'all',
-                                    variant: 'all',
-                                    minQty: '',
-                                    maxQty: '',
-                                    startDate: '',
-                                    endDate: '',
-                                    place: []
-                                })}
-                            >
-                                Reset All Filters
-                            </Button>
+                        <div className="relative h-full min-h-[60px]">
+                            <div className="space-y-3.5 pt-1">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    Order Status
+                                </label>
+                                <label className="relative flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={filters.pendingOnly}
+                                        onChange={(e) => setFilters(f => ({ ...f, pendingOnly: e.target.checked }))}
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+                                    <span className="ml-2 text-xs font-medium text-gray-600">
+                                        {filters.pendingOnly ? 'Pending Only' : 'All Orders'}
+                                    </span>
+                                </label>
+                            </div>
+                            <div className="absolute bottom-1 right-0">
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="h-8 px-4 text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100/80 rounded-xl"
+                                    onClick={() => setFilters({
+                                        customer: [],
+                                        item: 'all',
+                                        variant: 'all',
+                                        minQty: '',
+                                        maxQty: '',
+                                        startDate: '',
+                                        endDate: '',
+                                        place: [],
+                                        pendingOnly: false
+                                    })}
+                                >
+                                    Reset All Filters
+                                </Button>
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -657,18 +681,18 @@ export default function OrdersPage() {
                         </TableRow>
                     ) : paginatedData.length > 0 ? (
                         paginatedData.map((inv) => (
-                                <OrderRow
-                                    key={inv.order_id}
-                                    order={inv}
-                                    places={places}
-                                    onUpdateOrderPlace={handleUpdateOrderPlace}
-                                    onCreateOrderPlace={handleCreateOrderPlace}
-                                    onEditOrder={(o) => {
-                                        setEditOrder(o);
-                                        setIsEditModalOpen(true);
-                                    }}
-                                    onDeleteOrder={handleDeleteOrder}
-                                />
+                            <OrderRow
+                                key={inv.order_id}
+                                order={inv}
+                                places={places}
+                                onUpdateOrderPlace={handleUpdateOrderPlace}
+                                onCreateOrderPlace={handleCreateOrderPlace}
+                                onEditOrder={(o) => {
+                                    setEditOrder(o);
+                                    setIsEditModalOpen(true);
+                                }}
+                                onDeleteOrder={handleDeleteOrder}
+                            />
                         ))
                     ) : (
                         <TableRow>
@@ -702,16 +726,16 @@ export default function OrdersPage() {
             )}
 
             <OrderModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewOrder} />
-            <EditOrderModal 
-                isOpen={isEditModalOpen} 
-                onClose={() => setIsEditModalOpen(false)} 
-                onSubmit={fetchOrders} 
+            <EditOrderModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSubmit={fetchOrders}
                 order={editOrder}
             />
-            <GenericExportModal 
-                isOpen={isExportModalOpen} 
-                onClose={() => setIsExportModalOpen(false)} 
-                data={exportData} 
+            <GenericExportModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                data={exportData}
                 columns={exportColumns}
                 filenamePrefix="orders"
             />
