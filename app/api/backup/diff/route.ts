@@ -68,8 +68,8 @@ export async function POST(request: Request) {
                     // Simple deep comparison via JSON stringify is fastest, but key order matters
                     // Better to compare keys
                     let isModified = false;
-                    for (const key of Object.keys(backupItem)) {
-                        if (JSON.stringify(backupItem[key]) !== JSON.stringify(liveItem[key])) {
+                    for (const key of Object.keys(backupItem as any)) {
+                        if (JSON.stringify((backupItem as any)[key]) !== JSON.stringify(liveItem[key])) {
                             isModified = true;
                             break;
                         }
