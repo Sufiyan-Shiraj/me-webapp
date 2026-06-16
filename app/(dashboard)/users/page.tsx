@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/Table';
 import RecentActivityTable from '@/components/settings/RecentActivityTable';
 import UserModal from '@/components/users/UserModal';
+import BackupRestoreCard from '@/components/settings/BackupRestoreCard';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -97,7 +98,8 @@ export default function UsersPage() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
-                <Card className="lg:col-span-1 bg-white border-border shadow-sm overflow-hidden h-fit lg:sticky lg:top-8 z-10">
+                <div className="lg:col-span-1 space-y-6 h-fit lg:sticky lg:top-8 z-10">
+                    <Card className="bg-white border-border shadow-sm overflow-hidden">
                     <CardHeader className="border-b border-border pb-4">
                         <div className="flex items-center gap-2">
                             <div className="p-2 rounded-lg bg-accent/10 text-accent">
@@ -192,6 +194,8 @@ export default function UsersPage() {
                         </form>
                     </CardBody>
                 </Card>
+                <BackupRestoreCard />
+            </div>
 
                 <div className="lg:col-span-2 space-y-6 lg:space-y-8 mt-6 lg:mt-0">
                     <Card className="bg-white border-border shadow-sm overflow-hidden relative z-0">
