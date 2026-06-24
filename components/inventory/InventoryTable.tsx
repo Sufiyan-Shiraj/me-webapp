@@ -3,17 +3,18 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Search, Download, Plus, Package, Tag, Edit, Trash2, ChevronRight, PackageOpen, RotateCcw } from 'lucide-react';
+import { Search, Download, Plus, Package, Tag, Edit, Trash2, ChevronRight, PackageOpen, RotateCcw, ArrowRightLeft } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ProductModal } from './ProductModal';
 import { GroupEditModal } from './GroupEditModal';
 import { ExportPreviewModal } from './ExportPreviewModal';
+import { MigrateVariantModal } from './MigrateVariantModal';
 import { Select } from '@/components/ui/Select';
 import clsx from 'clsx';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { InventoryItem } from '@/lib/types';
-import { deleteItem, deleteItemType, saveInventory, updateInventoryQuantities, hardDeleteItem, hardDeleteItemType, unarchiveItem, unarchiveItemType } from '@/lib/actions/inventoryActions';
+import { deleteItem, deleteItemType, saveInventory, updateInventoryQuantities, hardDeleteItem, hardDeleteItemType, unarchiveItem, unarchiveItemType, renameItem, migrateVariant } from '@/lib/actions/inventoryActions';
 
 // --- Types ---
 interface ProductGroup {
@@ -42,10 +43,12 @@ interface InventoryCardProps {
     group: ProductGroup;
     onEdit?: (group: ProductGroup) => void;
     onDelete?: () => void;
+    onMigrateClick?: (variant: InventoryItem, currentProductName: string) => void;
     canEdit?: boolean;
 }
 
-const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardProps) => {
+const InventoryTableRow = ({ group, onEdit, onDelete, onMigrateClick, canEdit }: InventoryCardProps) => {
+
     const [isOpen, setIsOpen] = useState(false);
 
     const totalQuantity = group.variants.reduce((acc, v) => acc + v.quantity, 0);
@@ -213,6 +216,18 @@ const InventoryTableRow = ({ group, onEdit, onDelete, canEdit }: InventoryCardPr
                                                         )}
                                                         {canEdit && (
                                                             <div className="opacity-0 group-hover/var:opacity-100 flex items-center gap-1 ml-2 transition-all">
+                                                                {!variant.is_archived && !variant.item_is_archived && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            onMigrateClick?.(variant, group.name);
+                                                                        }}
+                                                                        className="p-1 text-gray-400 hover:text-accent hover:bg-accent/10 rounded-lg transition-all"
+                                                                        title="Migrate Variant"
+                                                                    >
+                                                                        <ArrowRightLeft size={14} />
+                                                                    </button>
+                                                                )}
                                                                 {variant.is_archived || variant.item_is_archived ? (
                                                                     <>
                                                                         <button
@@ -301,9 +316,23 @@ export default function InventoryTable() {
     const [editingGroup, setEditingGroup] = useState<ProductGroup | undefined>(undefined);
     
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+    const [isMigrateModalOpen, setIsMigrateModalOpen] = useState(false);
+    const [migratingVariant, setMigratingVariant] = useState<InventoryItem | null>(null);
+    const [migratingVariantParentName, setMigratingVariantParentName] = useState('');
     
     const [groups, setGroups] = useState<ProductGroup[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+
+    const productsList = useMemo(() => {
+        return groups
+            .map(g => ({
+                id: g.variants[0]?.item_id,
+                name: g.name
+            }))
+            .filter(p => p.id);
+    }, [groups]);
+
 
     React.useEffect(() => {
         fetchInventory();
@@ -452,7 +481,16 @@ export default function InventoryTable() {
         }
     };
 
-    const handleGroupSave = async (baseId: string, updates: { id: string; quantity: number; unit: string }[]) => {
+    const handleGroupSave = async (baseId: string, newItemName: string, updates: { id: string; quantity: number; unit: string }[]) => {
+        const currentGroup = groups.find(g => g.variants[0]?.item_id === baseId);
+        if (currentGroup && currentGroup.name !== newItemName) {
+            const renameRes = await renameItem(baseId, newItemName);
+            if (!renameRes.success) {
+                alert(renameRes.error);
+                return;
+            }
+        }
+
         const res = await updateInventoryQuantities(updates);
         if (res.success) {
             fetchInventory();
@@ -460,6 +498,16 @@ export default function InventoryTable() {
             alert(res.error);
         }
     };
+
+    const handleMigrateVariant = async (variantId: string, targetItemId: string) => {
+        const res = await migrateVariant(variantId, targetItemId);
+        if (res.success) {
+            fetchInventory();
+        } else {
+            alert(res.error);
+        }
+    };
+
 
     const handleExport = () => {
         if (sortedAndFilteredGroups.length === 0) {
@@ -540,6 +588,11 @@ export default function InventoryTable() {
                                             canEdit={canEdit}
                                             onEdit={handleEditGroup}
                                             onDelete={fetchInventory}
+                                            onMigrateClick={(variant, currentName) => {
+                                                setMigratingVariant(variant);
+                                                setMigratingVariantParentName(currentName);
+                                                setIsMigrateModalOpen(true);
+                                            }}
                                         />
                                     ))}
                                 </AnimatePresence>
@@ -581,6 +634,20 @@ export default function InventoryTable() {
                 onClose={() => setIsExportModalOpen(false)}
                 data={sortedAndFilteredGroups}
             />
+
+            <MigrateVariantModal
+                isOpen={isMigrateModalOpen}
+                onClose={() => {
+                    setIsMigrateModalOpen(false);
+                    setMigratingVariant(null);
+                    setMigratingVariantParentName('');
+                }}
+                variant={migratingVariant}
+                currentProductName={migratingVariantParentName}
+                products={productsList}
+                onMigrate={handleMigrateVariant}
+            />
         </div>
     );
 }
+

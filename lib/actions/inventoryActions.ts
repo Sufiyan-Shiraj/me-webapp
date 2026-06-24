@@ -302,3 +302,38 @@ export async function hardDeleteItemType(typeId: string) {
         return { success: false, error: error.message || 'Failed to permanently delete variant' };
     }
 }
+
+export async function renameItem(itemId: string, newName: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('me_items')
+            .update({ name: newName.trim() })
+            .eq('id', itemId);
+
+        if (error) throw error;
+
+        revalidatePath('/inventory');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error renaming item:', error);
+        return { success: false, error: error.message || 'Failed to rename product.' };
+    }
+}
+
+export async function migrateVariant(variantId: string, targetItemId: string) {
+    try {
+        const { error } = await supabaseAdmin
+            .from('me_item_types')
+            .update({ item_id: targetItemId })
+            .eq('id', variantId);
+
+        if (error) throw error;
+
+        revalidatePath('/inventory');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error migrating variant:', error);
+        return { success: false, error: error.message || 'Failed to migrate variant.' };
+    }
+}
+

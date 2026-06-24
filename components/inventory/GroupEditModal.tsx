@@ -16,17 +16,19 @@ interface ProductGroup {
 interface GroupEditModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (item_id: string, updates: { id: string; quantity: number; unit: string }[]) => void | Promise<void>;
+    onSubmit: (item_id: string, newItemName: string, updates: { id: string; quantity: number; unit: string }[]) => void | Promise<void>;
     group?: ProductGroup;
 }
 
 export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditModalProps) {
     const [variants, setVariants] = useState<InventoryItem[]>([]);
+    const [itemName, setItemName] = useState('');
 
     useEffect(() => {
         if (group) {
             // Create a deep copy to avoid mutating props directly
             setVariants(group.variants.map(v => ({ ...v })));
+            setItemName(group.name);
         }
     }, [group, isOpen]);
 
@@ -44,7 +46,7 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!group) return;
+        if (!group || !itemName.trim()) return;
 
         const baseId = group.variants[0]?.item_id;
         const updates = variants.map(v => ({
@@ -53,7 +55,7 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
             unit: v.unit || 'kg'
         }));
 
-        onSubmit(baseId, updates);
+        onSubmit(baseId, itemName.trim(), updates);
         onClose();
     };
 
@@ -63,8 +65,8 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Edit Stock: ${group.name}`}
-            description="Update quantities for all variants below."
+            title={`Edit Product`}
+            description="Update the product name and variant details below."
             footer={
                 <>
                     <Button variant="ghost" onClick={onClose}>Cancel</Button>
@@ -73,6 +75,18 @@ export function GroupEditModal({ isOpen, onClose, onSubmit, group }: GroupEditMo
             }
         >
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="space-y-1 bg-accent/[0.02] p-3.5 rounded-xl border border-accent/10 mb-2">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Product Name</label>
+                    <Input
+                        type="text"
+                        value={itemName}
+                        onChange={(e) => setItemName(e.target.value)}
+                        className="font-medium text-gray-900 border-gray-200/50 focus:border-accent focus:ring-accent"
+                        placeholder="Product Name"
+                        required
+                    />
+                </div>
+
                 <div className="grid grid-cols-12 gap-4 text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">
                     <div className="col-span-5">Variant Type</div>
                     <div className="col-span-4">Quantity</div>
