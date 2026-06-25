@@ -48,7 +48,25 @@ const OrderRow = ({ order, places, onUpdateOrderPlace, onCreateOrderPlace, onEdi
                 className={clsx("cursor-pointer group transition-colors", isOpen ? "bg-gray-50" : "", styles['animate-slide-up'])}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <TableCell className="font-mono text-sm font-medium text-gray-600 group-hover:text-accent transition-colors">
+                {/* Mobile combined cell */}
+                <TableCell className="sm:hidden">
+                    <div className="flex items-start gap-2">
+                        <div className="mt-1">
+                            <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
+                                <svg width="12" height="7" viewBox="0 0 12 7" fill="none" className="text-gray-400">
+                                    <path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </motion.div>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-gray-900">{order.customer_name}</span>
+                            <span className="text-xs text-gray-500 font-mono mt-0.5">#{order.order_id} • {new Date(order.date).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </TableCell>
+
+                {/* Desktop separate cells */}
+                <TableCell className="hidden sm:table-cell font-mono text-sm font-medium text-gray-600 group-hover:text-accent transition-colors">
                     <div className="flex items-center gap-2">
                         <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
                             <svg width="12" height="7" viewBox="0 0 12 7" fill="none" className="text-gray-400">
@@ -58,10 +76,11 @@ const OrderRow = ({ order, places, onUpdateOrderPlace, onCreateOrderPlace, onEdi
                         #{order.order_id}
                     </div>
                 </TableCell>
-                <TableCell className="text-gray-600 text-sm">{new Date(order.date).toLocaleDateString()}</TableCell>
-                <TableCell className="font-medium text-foreground group-hover:text-gray-900 transition-colors">{order.customer_name}</TableCell>
-                <TableCell className="w-48">
-                    <div onClick={(e) => e.stopPropagation()} className="w-40">
+                <TableCell className="hidden sm:table-cell text-gray-600 text-sm">{new Date(order.date).toLocaleDateString()}</TableCell>
+                <TableCell className="hidden sm:table-cell font-medium text-foreground group-hover:text-gray-900 transition-colors">{order.customer_name}</TableCell>
+                
+                <TableCell className="w-32 sm:w-48">
+                    <div onClick={(e) => e.stopPropagation()} className="w-32 sm:w-40">
                         <Select
                             options={places.map(p => ({ value: p.name, label: p.name }))}
                             value={order.items[0]?.place || ''}
@@ -71,13 +90,13 @@ const OrderRow = ({ order, places, onUpdateOrderPlace, onCreateOrderPlace, onEdi
                         />
                     </div>
                 </TableCell>
-                <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                    <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="Edit Order" onClick={() => onEditOrder(order)}>
-                            <Edit3 size={18} />
+                <TableCell className="text-right px-2 sm:px-4" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-1 sm:gap-2 opacity-100 sm:opacity-60 group-hover:opacity-100 transition-opacity">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="Edit Order" onClick={() => onEditOrder(order)}>
+                            <Edit3 size={16} className="sm:w-[18px] sm:h-[18px]" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-red-600 hover:bg-red-50 rounded-full text-red-500" title="Delete Order" onClick={() => onDeleteOrder(order.order_id)}>
-                            <Trash2 size={18} />
+                        <Button size="sm" variant="ghost" className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:text-red-600 hover:bg-red-50 rounded-full text-red-500" title="Delete Order" onClick={() => onDeleteOrder(order.order_id)}>
+                            <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" />
                         </Button>
                     </div>
                 </TableCell>
@@ -87,7 +106,7 @@ const OrderRow = ({ order, places, onUpdateOrderPlace, onCreateOrderPlace, onEdi
             <AnimatePresence>
                 {isOpen && (
                     <TableRow className="bg-accent/[0.02] border-l-2 border-accent border-b-0 hover:bg-accent/[0.02]">
-                        <TableCell colSpan={6} className="p-0 border-b-0">
+                        <TableCell colSpan={5} className="p-0 border-b-0">
                             <motion.div
                                 initial={{ height: 0, opacity: 0 }}
                                 animate={{ height: 'auto', opacity: 1 }}
@@ -95,31 +114,31 @@ const OrderRow = ({ order, places, onUpdateOrderPlace, onCreateOrderPlace, onEdi
                                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                                 className="overflow-hidden"
                             >
-                                <div className="p-6 md:px-12 py-6">
-                                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-                                        <div className="grid grid-cols-12 gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 p-4 bg-gray-50/50">
-                                            <div className="col-span-8">Item / Variant</div>
-                                            <div className="col-span-4 text-center">Fulfillment</div>
+                                <div className="p-3 sm:p-6 md:px-12 py-4 sm:py-6 overflow-x-auto">
+                                    <div className="bg-white border border-gray-100 rounded-2xl shadow-sm min-w-full">
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 p-3 sm:p-4 bg-gray-50/50">
+                                            <div className="flex-1">Item / Variant</div>
+                                            <div className="w-[120px] sm:w-48 text-center">Fulfillment</div>
                                         </div>
                                         <div className="divide-y divide-gray-50 max-h-[40vh] overflow-y-auto custom-scrollbar">
                                             {order.items.map((item) => {
                                                 return (
-                                                    <div key={item.id} className="grid grid-cols-12 gap-4 items-center p-4 hover:bg-gray-50/30 transition-colors">
-                                                        <div className="col-span-8 flex flex-col">
+                                                    <div key={item.id} className="flex justify-between items-center p-3 sm:p-4 hover:bg-gray-50/30 transition-colors">
+                                                        <div className="flex-1 flex flex-col pr-2">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="text-sm font-semibold text-gray-900">{item.product_name}</span>
                                                             </div>
                                                             <span className="text-xs text-gray-500 font-medium mt-1">{item.variant}</span>
                                                         </div>
-                                                        <div className="col-span-4 flex justify-center items-center gap-8">
-                                                            <div className="flex flex-col items-center w-16">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total</span>
-                                                                <span className="text-sm font-mono font-bold text-gray-900">{item.quantity}</span>
+                                                        <div className="w-[120px] sm:w-48 flex justify-center items-center gap-2 sm:gap-6">
+                                                            <div className="flex flex-col items-center flex-1">
+                                                                <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total</span>
+                                                                <span className="text-xs sm:text-sm font-mono font-bold text-gray-900">{item.quantity}</span>
                                                             </div>
-                                                            <div className="w-px h-8 bg-gray-200"></div>
-                                                            <div className="flex flex-col items-center w-16">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pending</span>
-                                                                <span className="text-sm font-mono font-bold text-orange-600">{item.pending}</span>
+                                                            <div className="w-px h-6 sm:h-8 bg-gray-200"></div>
+                                                            <div className="flex flex-col items-center flex-1">
+                                                                <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Pend</span>
+                                                                <span className="text-xs sm:text-sm font-mono font-bold text-orange-600">{item.pending}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -153,8 +172,8 @@ export default function OrdersPage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filters, setFilters] = useState({
         customer: [] as string[],
-        item: 'all',
-        variant: 'all',
+        item: [] as string[],
+        variant: [] as string[],
         minQty: '',
         maxQty: '',
         startDate: '',
@@ -219,6 +238,16 @@ export default function OrdersPage() {
             variants: variants
         };
     }, [data, filterMetadata]);
+
+    const variantOptions = useMemo(() => {
+        const options: { value: string, label: string }[] = [];
+        filterOptions.variants.forEach((vSet, item) => {
+            Array.from(vSet).sort().forEach(v => {
+                options.push({ value: `${item}::${v}`, label: `${item} - ${v}` });
+            });
+        });
+        return options.sort((a, b) => a.label.localeCompare(b.label));
+    }, [filterOptions.variants]);
 
     useEffect(() => {
         fetchOrders();
@@ -367,9 +396,11 @@ export default function OrdersPage() {
             if (filters.customer.length > 0 && !filters.customer.includes(inv.customer_name)) return false;
 
             // Item and Variant Filters
+            const noItemVariantFilters = filters.item.length === 0 && filters.variant.length === 0;
+
             const matchesItems = inv.items.some(item => {
-                const itemMatch = filters.item === 'all' || item.product_name === filters.item;
-                const variantMatch = filters.variant === 'all' || item.variant === filters.variant;
+                const varKey = `${item.product_name}::${item.variant}`;
+                const itemVariantMatch = noItemVariantFilters || filters.variant.includes(varKey);
 
                 // Quantity Filters
                 const minMatch = !filters.minQty || item.quantity >= Number(filters.minQty);
@@ -378,7 +409,7 @@ export default function OrdersPage() {
                 // Pending Only Filter
                 const pendingMatch = !filters.pendingOnly || item.pending > 0;
 
-                return itemMatch && variantMatch && minMatch && maxMatch && pendingMatch;
+                return itemVariantMatch && minMatch && maxMatch && pendingMatch;
             });
             if (!matchesItems) return false;
 
@@ -518,13 +549,40 @@ export default function OrdersPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Plus size={12} /> Product
                             </label>
-                            <Select
-                                value={filters.item}
-                                onChange={(val) => setFilters(f => ({ ...f, item: val as string, variant: 'all' }))}
-                                options={[
-                                    { value: 'all', label: 'All Products' },
-                                    ...filterOptions.items.map(i => ({ value: i, label: i }))
-                                ]}
+                            <MultiSelect
+                                values={filters.item}
+                                placeholder="All Products"
+                                onChange={(vals) => {
+                                    setFilters(f => {
+                                        const addedItems = vals.filter(v => !f.item.includes(v));
+                                        const removedItems = f.item.filter(v => !vals.includes(v));
+                                        
+                                        let newVariants = [...f.variant];
+                                        
+                                        addedItems.forEach(item => {
+                                            const itemVariants = filterOptions.variants.get(item);
+                                            if (itemVariants) {
+                                                itemVariants.forEach(v => {
+                                                    const varKey = `${item}::${v}`;
+                                                    if (!newVariants.includes(varKey)) newVariants.push(varKey);
+                                                });
+                                            }
+                                        });
+                                        
+                                        removedItems.forEach(item => {
+                                            const itemVariants = filterOptions.variants.get(item);
+                                            if (itemVariants) {
+                                                itemVariants.forEach(v => {
+                                                    const varKey = `${item}::${v}`;
+                                                    newVariants = newVariants.filter(nv => nv !== varKey);
+                                                });
+                                            }
+                                        });
+                                        
+                                        return { ...f, item: vals, variant: newVariants };
+                                    });
+                                }}
+                                options={filterOptions.items.map(i => ({ value: i, label: i }))}
                             />
                         </div>
 
@@ -532,17 +590,30 @@ export default function OrdersPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <ChevronDown size={12} /> Variant
                             </label>
-                            <Select
-                                value={filters.variant}
-                                onChange={(val) => setFilters(f => ({ ...f, variant: val as string }))}
-                                disabled={filters.item === 'all'}
-                                options={[
-                                    { value: 'all', label: 'All Variants' },
-                                    ...(filters.item !== 'all' && filterOptions.variants.get(filters.item) ?
-                                        Array.from(filterOptions.variants.get(filters.item)!).sort().map(v => ({ value: v, label: v })) :
-                                        []
-                                    )
-                                ]}
+                            <MultiSelect
+                                values={filters.variant}
+                                placeholder="All Variants"
+                                onChange={(vals) => {
+                                    setFilters(f => {
+                                        const newItems = [...f.item];
+                                        
+                                        filterOptions.items.forEach(item => {
+                                            const itemVariants = filterOptions.variants.get(item);
+                                            if (itemVariants && itemVariants.size > 0) {
+                                                const allSelected = Array.from(itemVariants).every(v => vals.includes(`${item}::${v}`));
+                                                if (allSelected && !newItems.includes(item)) {
+                                                    newItems.push(item);
+                                                } else if (!allSelected && newItems.includes(item)) {
+                                                    const idx = newItems.indexOf(item);
+                                                    if (idx > -1) newItems.splice(idx, 1);
+                                                }
+                                            }
+                                        });
+                                        
+                                        return { ...f, variant: vals, item: newItems };
+                                    });
+                                }}
+                                options={variantOptions}
                             />
                         </div>
 
@@ -643,8 +714,8 @@ export default function OrdersPage() {
                                     className="h-8 px-4 text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100/80 rounded-xl"
                                     onClick={() => setFilters({
                                         customer: [],
-                                        item: 'all',
-                                        variant: 'all',
+                                        item: [],
+                                        variant: [],
                                         minQty: '',
                                         maxQty: '',
                                         startDate: '',
@@ -664,9 +735,10 @@ export default function OrdersPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Customer</TableHead>
+                        <TableHead className="sm:hidden">Order</TableHead>
+                        <TableHead className="hidden sm:table-cell">Order ID</TableHead>
+                        <TableHead className="hidden sm:table-cell">Date</TableHead>
+                        <TableHead className="hidden sm:table-cell">Customer</TableHead>
                         <TableHead>Place</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>

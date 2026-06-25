@@ -80,7 +80,26 @@ const SaleRow = ({ sale, onDeleteSale, onEditSale }: SaleRowProps) => {
                 className={clsx("cursor-pointer group transition-colors", isOpen ? "bg-gray-50" : "", styles['animate-slide-up'])}
                 onClick={() => setIsOpen(!isOpen)}
             >
-                <TableCell className="font-mono text-sm font-medium text-gray-600 group-hover:text-accent transition-colors">
+                {/* Mobile combined cell */}
+                <TableCell className="sm:hidden">
+                    <div className="flex items-start gap-2">
+                        <div className="mt-1">
+                            <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
+                                <svg width="12" height="7" viewBox="0 0 12 7" fill="none" className="text-gray-400">
+                                    <path d="M1 1L6 6L11 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            </motion.div>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-bold text-gray-900">{sale.customer_name}</span>
+                            <span className="text-xs text-gray-500 font-mono mt-0.5">#{sale.sale_id} • {new Date(sale.created_at).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-gray-400 uppercase tracking-widest mt-1">{sale.items.reduce((acc, curr) => acc + curr.quantity, 0)} items</span>
+                        </div>
+                    </div>
+                </TableCell>
+
+                {/* Desktop separate cells */}
+                <TableCell className="hidden sm:table-cell font-mono text-sm font-medium text-gray-600 group-hover:text-accent transition-colors">
                     <div className="flex items-center gap-2">
                         <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
                             <svg width="12" height="7" viewBox="0 0 12 7" fill="none" className="text-gray-400">
@@ -90,20 +109,22 @@ const SaleRow = ({ sale, onDeleteSale, onEditSale }: SaleRowProps) => {
                         #{sale.sale_id}
                     </div>
                 </TableCell>
-                <TableCell className="text-gray-600 text-sm">{new Date(sale.created_at).toLocaleDateString()}</TableCell>
-                <TableCell className="font-medium text-foreground group-hover:text-gray-900 transition-colors">{sale.customer_name}</TableCell>
-                <TableCell className="text-gray-600 font-mono text-sm">{sale.items.reduce((acc, curr) => acc + curr.quantity, 0)} items</TableCell>
-                <TableCell className="text-gray-600 text-sm">{locations}</TableCell>
-                <TableCell className="text-right" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                    <div className="flex justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="View details" onClick={() => setIsOpen(!isOpen)}>
-                            <FileText size={20} />
+                <TableCell className="hidden sm:table-cell text-gray-600 text-sm">{new Date(sale.created_at).toLocaleDateString()}</TableCell>
+                <TableCell className="hidden sm:table-cell font-medium text-foreground group-hover:text-gray-900 transition-colors">{sale.customer_name}</TableCell>
+                <TableCell className="hidden sm:table-cell text-gray-600 font-mono text-sm">{sale.items.reduce((acc, curr) => acc + curr.quantity, 0)} items</TableCell>
+                
+                {/* Always visible cells */}
+                <TableCell className="text-gray-600 text-sm max-w-[120px] sm:max-w-none truncate" title={locations}>{locations}</TableCell>
+                <TableCell className="text-right px-2 sm:px-4" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                    <div className="flex justify-end gap-1 sm:gap-2 opacity-100 sm:opacity-60 group-hover:opacity-100 transition-opacity">
+                        <Button size="sm" variant="ghost" className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:text-accent hover:bg-accent/10 rounded-full" title="View details" onClick={() => setIsOpen(!isOpen)}>
+                            <FileText size={16} className="sm:w-[20px] sm:h-[20px]" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-blue-600 hover:bg-blue-50 rounded-full" title="Edit Shipment" onClick={() => onEditSale?.(sale)}>
-                            <Edit2 size={20} />
+                        <Button size="sm" variant="ghost" className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:text-blue-600 hover:bg-blue-50 rounded-full" title="Edit Shipment" onClick={() => onEditSale?.(sale)}>
+                            <Edit2 size={16} className="sm:w-[20px] sm:h-[20px]" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-10 w-10 p-0 hover:text-destructive hover:bg-destructive/10 rounded-full" title="Delete Sale" onClick={() => onDeleteSale?.(sale.sale_id)}>
-                            <Trash2 size={20} />
+                        <Button size="sm" variant="ghost" className="h-8 w-8 sm:h-10 sm:w-10 p-0 hover:text-destructive hover:bg-destructive/10 rounded-full" title="Delete Sale" onClick={() => onDeleteSale?.(sale.sale_id)}>
+                            <Trash2 size={16} className="sm:w-[20px] sm:h-[20px]" />
                         </Button>
                     </div>
                 </TableCell>
@@ -121,39 +142,39 @@ const SaleRow = ({ sale, onDeleteSale, onEditSale }: SaleRowProps) => {
                                 transition={{ duration: 0.3, ease: 'easeInOut' }}
                                 className="overflow-hidden"
                             >
-                                <div className="p-6 md:px-12 py-6">
-                                    <div className="flex items-center justify-between mb-4 px-2">
-                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fulfilled Orders in Shipment</h4>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Shipped Quantity</span>
+                                <div className="p-3 sm:p-6 md:px-12 py-4 sm:py-6 overflow-x-auto">
+                                    <div className="flex items-center justify-between mb-4 px-1 sm:px-2">
+                                        <h4 className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fulfilled Orders in Shipment</h4>
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest text-right">Shipped Qty</span>
                                     </div>
-                                    <div className="space-y-4 max-h-[40vh] overflow-y-auto custom-scrollbar px-2 pb-2">
+                                    <div className="space-y-4 max-h-[40vh] overflow-y-auto custom-scrollbar px-1 sm:px-2 pb-2">
                                         {groupedItems.map((group) => (
-                                            <div key={group.order_id} className="bg-white p-4 rounded-xl border border-gray-200 flex flex-col shadow-sm">
+                                            <div key={group.order_id} className="bg-white p-3 sm:p-4 rounded-xl border border-gray-200 flex flex-col shadow-sm">
                                                 <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-xs font-mono font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                                                        <span className="text-[10px] sm:text-xs font-mono font-bold text-gray-600 bg-gray-100 px-1.5 sm:px-2 py-1 rounded">
                                                             Order #{group.order_id}
                                                         </span>
-                                                        <span className="text-[10px] text-gray-400 font-medium">
+                                                        <span className="text-[9px] sm:text-[10px] text-gray-400 font-medium">
                                                             {new Date(group.date).toLocaleDateString()}
                                                         </span>
                                                         {group.place && <span className="text-[9px] text-gray-400 uppercase tracking-wide bg-gray-100 px-1.5 py-0.5 rounded">{group.place}</span>}
                                                     </div>
-                                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                                        Total Items <span className="text-sm font-mono text-gray-900">{group.items.reduce((acc, curr) => acc + curr.quantity, 0)}</span>
+                                                    <div className="text-[9px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1 sm:gap-2">
+                                                        Total <span className="hidden sm:inline">Items</span> <span className="text-sm font-mono text-gray-900">{group.items.reduce((acc, curr) => acc + curr.quantity, 0)}</span>
                                                     </div>
                                                 </div>
                                                 
                                                 <div className="space-y-3">
                                                     {group.items.map((item) => (
-                                                        <div key={item.id} className="grid grid-cols-12 gap-4 items-center pl-2">
-                                                            <div className="col-span-8 flex flex-col">
+                                                        <div key={item.id} className="flex justify-between items-center pl-1 sm:pl-2">
+                                                            <div className="flex-1 flex flex-col pr-2">
                                                                 <span className="text-sm font-semibold text-gray-900">{item.product_name}</span>
                                                                 <div className="flex items-center gap-2 mt-1">
                                                                     <span className="text-xs text-gray-500 font-medium">{item.variant}</span>
                                                                 </div>
                                                             </div>
-                                                            <div className="col-span-4 flex justify-end items-center pr-2">
+                                                            <div className="w-[60px] flex justify-end items-center pr-1 sm:pr-2">
                                                                 <span className="text-sm font-mono font-bold text-gray-900">{item.quantity}</span>
                                                             </div>
                                                         </div>
@@ -188,8 +209,8 @@ export default function ShipmentsPage() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [filters, setFilters] = useState({
         customer: [] as string[],
-        item: 'all',
-        variant: 'all',
+        item: [] as string[],
+        variant: [] as string[],
         minQty: '',
         maxQty: '',
         startDate: '',
@@ -257,6 +278,16 @@ export default function ShipmentsPage() {
             variants: variants
         };
     }, [data, filterMetadata]);
+
+    const variantOptions = useMemo(() => {
+        const options: { value: string, label: string }[] = [];
+        filterOptions.variants.forEach((vSet, item) => {
+            Array.from(vSet).sort().forEach(v => {
+                options.push({ value: `${item}::${v}`, label: `${item} - ${v}` });
+            });
+        });
+        return options.sort((a, b) => a.label.localeCompare(b.label));
+    }, [filterOptions.variants]);
 
     const fetchPlaces = async () => {
         const res = await getPlaces();
@@ -374,15 +405,17 @@ export default function ShipmentsPage() {
             if (filters.customer.length > 0 && (!sale.customer_name || !filters.customer.includes(sale.customer_name))) return false;
 
             // Item and Variant Filters
+            const noItemVariantFilters = filters.item.length === 0 && filters.variant.length === 0;
+
             const matchesItems = sale.items.some(item => {
-                const itemMatch = filters.item === 'all' || item.product_name === filters.item;
-                const variantMatch = filters.variant === 'all' || item.variant === filters.variant;
+                const varKey = `${item.product_name}::${item.variant}`;
+                const itemVariantMatch = noItemVariantFilters || filters.variant.includes(varKey);
                 
                 // Quantity Filters
                 const minMatch = !filters.minQty || item.quantity >= Number(filters.minQty);
                 const maxMatch = !filters.maxQty || item.quantity <= Number(filters.maxQty);
 
-                return itemMatch && variantMatch && minMatch && maxMatch;
+                return itemVariantMatch && minMatch && maxMatch;
             });
             if (!matchesItems) return false;
 
@@ -518,13 +551,40 @@ export default function ShipmentsPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <Plus size={12} /> Product
                             </label>
-                            <Select 
-                                value={filters.item}
-                                onChange={(val) => setFilters(f => ({ ...f, item: val as string, variant: 'all' }))}
-                                options={[
-                                    { value: 'all', label: 'All Products' },
-                                    ...filterOptions.items.map(i => ({ value: i, label: i }))
-                                ]}
+                            <MultiSelect
+                                values={filters.item}
+                                placeholder="All Products"
+                                onChange={(vals) => {
+                                    setFilters(f => {
+                                        const addedItems = vals.filter(v => !f.item.includes(v));
+                                        const removedItems = f.item.filter(v => !vals.includes(v));
+                                        
+                                        let newVariants = [...f.variant];
+                                        
+                                        addedItems.forEach(item => {
+                                            const itemVariants = filterOptions.variants.get(item);
+                                            if (itemVariants) {
+                                                itemVariants.forEach(v => {
+                                                    const varKey = `${item}::${v}`;
+                                                    if (!newVariants.includes(varKey)) newVariants.push(varKey);
+                                                });
+                                            }
+                                        });
+                                        
+                                        removedItems.forEach(item => {
+                                            const itemVariants = filterOptions.variants.get(item);
+                                            if (itemVariants) {
+                                                itemVariants.forEach(v => {
+                                                    const varKey = `${item}::${v}`;
+                                                    newVariants = newVariants.filter(nv => nv !== varKey);
+                                                });
+                                            }
+                                        });
+                                        
+                                        return { ...f, item: vals, variant: newVariants };
+                                    });
+                                }}
+                                options={filterOptions.items.map(i => ({ value: i, label: i }))}
                             />
                         </div>
 
@@ -532,17 +592,30 @@ export default function ShipmentsPage() {
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                                 <ChevronDown size={12} /> Variant
                             </label>
-                            <Select 
-                                value={filters.variant}
-                                onChange={(val) => setFilters(f => ({ ...f, variant: val as string }))}
-                                disabled={filters.item === 'all'}
-                                options={[
-                                    { value: 'all', label: 'All Variants' },
-                                    ...(filters.item !== 'all' && filterOptions.variants.get(filters.item) ? 
-                                        Array.from(filterOptions.variants.get(filters.item)!).sort().map(v => ({ value: v, label: v })) : 
-                                        []
-                                    )
-                                ]}
+                            <MultiSelect
+                                values={filters.variant}
+                                placeholder="All Variants"
+                                onChange={(vals) => {
+                                    setFilters(f => {
+                                        const newItems = [...f.item];
+                                        
+                                        filterOptions.items.forEach(item => {
+                                            const itemVariants = filterOptions.variants.get(item);
+                                            if (itemVariants && itemVariants.size > 0) {
+                                                const allSelected = Array.from(itemVariants).every(v => vals.includes(`${item}::${v}`));
+                                                if (allSelected && !newItems.includes(item)) {
+                                                    newItems.push(item);
+                                                } else if (!allSelected && newItems.includes(item)) {
+                                                    const idx = newItems.indexOf(item);
+                                                    if (idx > -1) newItems.splice(idx, 1);
+                                                }
+                                            }
+                                        });
+                                        
+                                        return { ...f, variant: vals, item: newItems };
+                                    });
+                                }}
+                                options={variantOptions}
                             />
                         </div>
 
@@ -625,8 +698,8 @@ export default function ShipmentsPage() {
                                 className="h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100/80 rounded-xl"
                                 onClick={() => setFilters({
                                     customer: [],
-                                    item: 'all',
-                                    variant: 'all',
+                                    item: [],
+                                    variant: [],
                                     minQty: '',
                                     maxQty: '',
                                     startDate: '',
@@ -644,10 +717,11 @@ export default function ShipmentsPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead>Shipment ID</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Total Items</TableHead>
+                        <TableHead className="sm:hidden">Shipment</TableHead>
+                        <TableHead className="hidden sm:table-cell">Shipment ID</TableHead>
+                        <TableHead className="hidden sm:table-cell">Date</TableHead>
+                        <TableHead className="hidden sm:table-cell">Customer</TableHead>
+                        <TableHead className="hidden sm:table-cell">Total Items</TableHead>
                         <TableHead>Locations</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
