@@ -95,9 +95,9 @@ export function TableHead({ children, className, sortable, sortDirection, onSort
     );
 }
 
-export function TableCell({ children, className, colSpan, onClick }: { children: React.ReactNode; className?: string; colSpan?: number; onClick?: (e: React.MouseEvent<HTMLTableCellElement>) => void }) {
+export function TableCell({ children, className, colSpan, onClick, title }: { children: React.ReactNode; className?: string; colSpan?: number; onClick?: (e: React.MouseEvent<HTMLTableCellElement>) => void; title?: string }) {
     return (
-        <td className={clsx('px-4 py-3 text-sm text-gray-900', className)} colSpan={colSpan} onClick={onClick}>
+        <td className={clsx('px-4 py-3 text-sm text-gray-900', className)} colSpan={colSpan} onClick={onClick} title={title}>
             {children}
         </td>
     );
